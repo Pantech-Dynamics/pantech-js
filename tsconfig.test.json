@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@pantechdynamic/sdk": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "examples", "vitest.config.ts", "tsup.config.ts"]
+}

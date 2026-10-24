@@ -1,0 +1,74 @@
+{
+  "name": "@pantechdynamic/sdk",
+  "version": "0.1.0",
+  "description": "The official TypeScript and JavaScript SDK for the Pantech Dynamics public API.",
+  "license": "MIT",
+  "author": "Pantech Dynamics",
+  "homepage": "https://docs.pantechdynamics.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pantech-Dynamics/pantech-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pantech-Dynamics/pantech-js/issues"
+  },
+  "keywords": [
+    "pantech",
+    "pantech dynamics",
+    "cloud",
+    "api",
+    "sdk",
+    "vps"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "spec:sync": "node scripts/sync-spec.mjs",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "smoke": "node test/smoke.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "@types/node": "20.19.43",
+    "openapi-typescript": "7.13.0",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7",
+    "yaml": "2.9.1"
+  }
+}

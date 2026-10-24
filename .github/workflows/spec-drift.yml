@@ -1,0 +1,86 @@
+name: Spec drift
+
+# Weekly: compares the vendored spec with the published public API spec.
+# If they differ, it regenerates the types and runs the coverage test, then
+# opens (or updates) an issue so a maintainer can add any new methods.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # open or update the drift issue
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Fetch the published spec
+        run: npm run spec:sync
+
+      - id: diff
+        name: Compare
+        shell: bash
+        run: |
+          if git diff --quiet -- spec/; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "The vendored spec is current."
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- spec/
+          fi
+
+      - id: check
+        name: Regenerate and run the coverage test
+        if: steps.diff.outputs.drift == 'true'
+        shell: bash
+        run: |
+          npm run generate
+          if npx vitest run test/coverage.test.ts > coverage.txt 2>&1 && npm run typecheck >> coverage.txt 2>&1; then
+            echo "covered=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "covered=false" >> "$GITHUB_OUTPUT"
+          fi
+          tail -n 60 coverage.txt
+
+      - name: Open or update an issue
+        if: steps.diff.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COVERED: ${{ steps.check.outputs.covered }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="The public API spec has changed"
+          {
+            echo "The published spec (https://docs.pantechdynamics.com/openapi/public-api.yaml) differs from \`spec/public-api.yaml\`."
+            echo
+            if [ "$COVERED" = "true" ]; then
+              echo "Every operation still has an SDK method. Run \`npm run spec:sync && npm run generate\`, review and commit."
+            else
+              echo "Some operations have no SDK method, or the types no longer compile. Run \`npm run spec:sync && npm run generate\`, add the methods and the coverage-table entries, and commit."
+            fi
+            echo
+            echo '```'
+            git diff --stat -- spec/
+            tail -n 40 coverage.txt 2>/dev/null || true
+            echo '```'
+          } > body.md
+          number=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body-file body.md
+          else
+            gh issue create --title "$title" --body-file body.md
+          fi
