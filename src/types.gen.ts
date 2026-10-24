@@ -1168,7 +1168,7 @@ export interface paths {
      *
      *     Send an `Idempotency-Key`. A retry with the same key returns the original operation instead of making the change twice.
      *
-     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     *     **Scope:** `write`. Closing access never needs `delete`, even for an AI app.
      */
     delete: operations["revokeSSHAccess"];
     options?: never;
