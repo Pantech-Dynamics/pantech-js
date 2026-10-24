@@ -14,3 +14,10 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    # The SDK is tested on every supported Node.js release (see ci.yml), so
+    # its build and test tools must keep running on the oldest one. Major
+    # versions of those tools often drop old Node.js releases: take them by
+    # hand, together with a change to the supported range.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
