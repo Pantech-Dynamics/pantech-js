@@ -11,6 +11,7 @@ export {
   APITimeoutError,
   AuthenticationError,
   BadRequestError,
+  CloudFailedError,
   ConflictError,
   type FieldError,
   InternalServerError,

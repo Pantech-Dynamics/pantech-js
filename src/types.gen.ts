@@ -1933,7 +1933,9 @@ export interface paths {
     put?: never;
     /**
      * Upgrade a Kubernetes cluster
-     * @description Moves the cluster to a newer Kubernetes version: one of its `available_upgrades` (the next patch, or the next minor version). Upgrades never happen on their own and never go down. The cluster must be running; nodes are replaced one at a time.
+     * @description Moves the cluster to one of its `available_upgrades` (the next patch, or the next minor version). Upgrades never happen on their own and never go down.
+     *
+     *     Today every cluster runs the version it was created with: its `available_upgrades` is empty and an upgrade is refused with `409 KUBERNETES_UPGRADE_NOT_AVAILABLE`. To move to a newer version, create a new cluster on it and move your workloads.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`; a failed operation carries a stable `failure.code` and a readable `failure.reason`.
      *
@@ -1958,9 +1960,10 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Resize worker node compute plan
-     * @description Resizes the compute plan of worker nodes in the cluster via zero-downtime rolling replacement.
-     *     A new worker node with the updated plan is provisioned, joins the cluster, workloads migrate, and the old node is retired.
+     * Change the cluster's node plan
+     * @description A cluster's node plan is set when it is created and cannot be changed: its nodes keep the size they were built with. Sending a different `node_plan` is refused with `409 KUBERNETES_NODE_PLAN_NOT_CHANGEABLE` and nothing is recorded or billed; sending the plan the cluster already runs changes nothing.
+     *
+     *     For bigger nodes, add a node pool on the plan you need (`POST /public/v1/kubernetes-clusters/{cluster_id}/node-pools`), or create a new cluster on it and move your workloads there.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`.
      *
@@ -1986,7 +1989,7 @@ export interface paths {
     put?: never;
     /**
      * Upgrade Kubernetes cluster networking
-     * @description Reconfigures the CNI plugin (`flannel`, `wireguard`, `calico`), Pod CIDR, Service CIDR, or API allowed CIDR ranges for the cluster.
+     * @description Changes the API server allow-list (`api_allowed_cidrs`). A cluster's `cni_plugin`, `pod_cidr` and `service_cidr` are set when it is created: sending a different value is refused with `409 KUBERNETES_NETWORK_NOT_CHANGEABLE`, and sending the current value again changes nothing.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`.
      *
@@ -3169,6 +3172,230 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/cloud-connections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List cloud connections
+     * @description Your organization's connections to other cloud accounts, newest first. Each carries its setup: the template that creates the read-only role in your account.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listCloudConnections"];
+    put?: never;
+    /**
+     * Connect a cloud account
+     * @description Starts a connection to an AWS account. Nothing is shared yet: the response's `setup` holds a CloudFormation template (and, when available, a one-click `quick_create_url`) that creates, in your AWS account, a read-only role only Pantech can assume, with short-lived tokens for this one connection. No access keys are ever sent to Pantech.
+     *
+     *     Create the stack, then send its `RoleArn` output with `PATCH /public/v1/cloud-connections/{connection_id}`. At most 10 connections per organization. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the connection the first request made; the same key with a different name returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createCloudConnection"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/cloud-connections/{connection_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a cloud connection
+     * @description One connection, with its status and setup. `status` is `awaiting_role` until you send the role ARN, `verifying` while Pantech tries it, then `connected` or `failed` (see `failure`).
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getCloudConnection"];
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect a cloud account
+     * @description Removes the connection and its scans from Pantech; migration plans made from it stay. To revoke access on the AWS side too, delete the CloudFormation stack. Disconnecting only takes access away, so it needs `write`, not `delete`. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["deleteCloudConnection"];
+    options?: never;
+    head?: never;
+    /**
+     * Update a cloud connection
+     * @description Renames a connection, sets the role ARN your stack created, or retries a failed check (`retry: true`). Setting `role_arn` or `retry` queues a verification: Pantech assumes the role and reads which AWS account it belongs to, usually within a minute. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateCloudConnection"];
+    trace?: never;
+  };
+  "/public/v1/cloud-connections/{connection_id}/scans": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List scans
+     * @description A connection's scans, newest first, without their inventories. The 10 newest finished scans are kept.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listCloudScans"];
+    put?: never;
+    /**
+     * Scan a cloud account
+     * @description Queues a read of everything the role can see: servers, disks, networks, firewall groups, public addresses, load balancers, databases, bucket names, users, SSH keys and the last three months of spend, in every enabled region. Follow it with `GET /public/v1/cloud-scans/{scan_id}` until `status` is `succeeded` or `failed`; most accounts take under five minutes. Reading spend costs USD 0.01 on your AWS bill. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["startCloudScan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/cloud-scans/{scan_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a scan
+     * @description A scan's status, what it found (`counts`, `cost`, `regions`), and the parts it could not read (`warnings`). Add `include=inventory` for every item it found. Names and tags in the inventory are your own text, returned unchanged.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getCloudScan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List migrations
+     * @description Your organization's migration plans, newest first, without their items or estimate.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listMigrations"];
+    put?: never;
+    /**
+     * Plan a migration
+     * @description Builds a plan from a scan that succeeded: each server, disk, network, firewall group, database, key and person mapped to its Pantech equivalent, sized against today's plans, with anything that cannot move yet flagged and explained. Nothing is created: the plan is something to review, edit and export. `region` defaults to the first Pantech region. At most 25 migrations per organization. Owners and admins only.
+     *
+     *     The response includes a live price comparison: Pantech's monthly price for the planned servers, disks and networks next to the source account's average monthly bill.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createMigration"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a migration
+     * @description A plan with every item and a price comparison computed now, from current prices.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getMigration"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a migration
+     * @description Deletes a plan. Nothing in Pantech or in your other cloud is touched. Owners and admins only.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteMigration"];
+    options?: never;
+    head?: never;
+    /**
+     * Rename a migration
+     * @description Changes a plan's name. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["renameMigration"];
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Edit a plan item
+     * @description Changes one item, named by its `key`: leave it out of the move (`excluded`), choose another plan (`plan_slug`, for servers and databases), a size (`storage_gb`, for disks and databases), an address range (`cidr`, for networks and subnets), or a person's `role` and `email`. Items flagged as unsupported stay unsupported. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateMigrationItem"];
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/terraform": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export a migration as Terraform
+     * @description The plan's planned items as Terraform for the `Pantech-Dynamics/pantechdynamics` provider: `main.tf` and `variables.tf`. Values Pantech cannot know (the image to start from, an SSH key, disk offerings, database passwords) are variables without defaults. Review it, then run `terraform plan`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["exportMigrationTerraform"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3207,7 +3434,7 @@ export interface components {
        * @default ingress
        * @enum {string}
        */
-      direction: "ingress" | "egress";
+      direction?: "ingress" | "egress";
       /**
        * @description `tcp`, `udp`, `icmp` or `all`.
        * @enum {string}
@@ -3243,7 +3470,7 @@ export interface components {
        * @default allow
        * @enum {string}
        */
-      action: "allow" | "deny";
+      action?: "allow" | "deny";
     };
     CreateInstanceRequest: {
       /**
@@ -3300,6 +3527,12 @@ export interface components {
       tags?: {
         [key: string]: string;
       };
+      /**
+       * @description Installs the Pantech agent when the instance first boots and connects it to your organization, so agent sessions (`POST /public/v1/instances/{instance_id}/agent-sessions`) can start with no login to the instance. The agent connects out; nothing is opened on the instance. Set at creation only.
+       * @default false
+       * @example true
+       */
+      agent_enabled?: boolean;
     };
     CreateNetworkRequest: {
       /**
@@ -3325,12 +3558,18 @@ export interface components {
        */
       name: string;
       /**
-       * @description The zone to place the load balancer in.
-       * @example zone_06gk3x9tq7m2v8r4y1c5d0zp8w
+       * @description The zone to place the load balancer in, by its code as `GET /public/v1/regions` lists it.
+       * @example af-abj-1
        */
       zone_id?: string;
       /**
-       * @description `vpc_native` (a VPC zone: needs `public_ip_id` and `subnet_id`) or `appliance` (a standard zone: needs `zone_id`; a load balancer VM with its own public address, billed as that VM). Left out, it is `vpc_native` when `subnet_id` is given and `appliance` when only `zone_id` is. Anything else is `422 INVALID_LOAD_BALANCER_KIND`; an appliance in a zone that does not offer one fails its operation with `LOAD_BALANCER_APPLIANCE_UNAVAILABLE`.
+       * @description The listener protocol. Only `tcp` is offered: HTTP and HTTPS are balanced as `tcp` and reach your instances unchanged, so serve TLS on the instances. Anything else is `422 LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`.
+       * @default tcp
+       * @enum {string}
+       */
+      protocol?: "tcp";
+      /**
+       * @description `vpc_native` (a VPC zone: needs `public_ip_id` and `subnet_id`) or `appliance` (a standard zone: needs `zone_id`; a load balancer VM with its own public address, billed as that VM). Left out, it is `vpc_native` when `subnet_id` is given and `appliance` when only `zone_id` is. Anything else is `422 INVALID_LOAD_BALANCER_KIND`; an appliance in a zone that does not offer one fails its operation with `LOAD_BALANCER_APPLIANCE_UNAVAILABLE`, and one whose load balancer never starts serving fails it with `LOAD_BALANCER_APPLIANCE_NOT_READY` and is removed.
        * @enum {string}
        */
       kind?: "vpc_native" | "appliance";
@@ -3349,7 +3588,7 @@ export interface components {
        * @default roundrobin
        * @enum {string}
        */
-      algorithm: "roundrobin" | "leastconn" | "source";
+      algorithm?: "roundrobin" | "leastconn" | "source";
       /**
        * @description The TCP port clients connect to, 1 to 65535.
        * @example 443
@@ -3410,6 +3649,10 @@ export interface components {
       /** @description e.g. `lb_...`. */
       id: string;
       name: string;
+      /**
+       * @description The zone's code, as `GET /public/v1/regions` lists it.
+       * @example af-abj-1
+       */
       zone_id: string;
       /** @enum {string} */
       kind: "vpc_native" | "appliance";
@@ -3476,7 +3719,7 @@ export interface components {
        * @example prod-web
        */
       name: string;
-      /** @example zone_06gk3x9tq7m2v8r4y1c5d0zp8w */
+      /** @example af-abj-2 */
       zone_id: string;
       /**
        * @description From the Kubernetes versions list, in `zone_id`.
@@ -3489,7 +3732,7 @@ export interface components {
        */
       subnet_id?: string;
       /**
-       * @description The plan slug every node uses, from the plans list. In a zone where every node has one fixed size (af-abj-2: 2 vCPU, 4 GB), the plan must be that size: `422 KUBERNETES_PLAN_NOT_IN_ZONE` on `node_plan`.
+       * @description The plan slug every node uses, from the plans list. In a zone where every node has one fixed size (af-abj-2: 2 vCPU, 4 GB), the plan must be that size: `422 KUBERNETES_PLAN_NOT_IN_ZONE` on `node_plan`. Fixed once the cluster is created: for bigger nodes later, add a node pool.
        * @example s-2vcpu-4gb
        */
       node_plan: string;
@@ -3498,7 +3741,7 @@ export interface components {
        * @default 1
        * @enum {integer}
        */
-      control_nodes: 1 | 3;
+      control_nodes?: 1 | 3;
       /**
        * @description Worker nodes, 1 to 10. Required unless `autoscaling` is enabled, when it defaults to `min_workers` and must lie within the range.
        * @example 2
@@ -3519,27 +3762,27 @@ export interface components {
        */
       kind?: "appliance";
       /**
-       * @description CNI backend plugin (`flannel`, `wireguard`, or `calico`). Defaults to `flannel`.
+       * @description CNI backend plugin (`flannel`, `wireguard`, or `calico`). Defaults to `flannel`. Cannot be changed after creation.
        * @example flannel
        */
       cni_plugin?: string;
       /**
-       * @description IPv4 CIDR range allocated for cluster pods. Defaults to `10.42.0.0/16`.
+       * @description IPv4 CIDR range allocated for cluster pods. It must not overlap the cluster's VPC network, its subnet or `service_cidr` (`422 KUBERNETES_POD_CIDR_OVERLAP`). Left out, the first of `10.42.0.0/16`, `10.244.0.0/16`, `172.20.0.0/16` and `192.168.0.0/17` clear of those is used. Cannot be changed after creation.
        * @example 10.42.0.0/16
        */
       pod_cidr?: string;
       /**
-       * @description IPv4 CIDR range allocated for cluster services. Defaults to `10.43.0.0/16`.
+       * @description IPv4 CIDR range allocated for cluster services. It must not overlap the cluster's VPC network, its subnet or `pod_cidr` (`422 KUBERNETES_SERVICE_CIDR_OVERLAP`). Left out, the first of `10.43.0.0/16`, `10.96.0.0/16`, `172.21.0.0/16` and `192.168.128.0/17` clear of those is used. Cannot be changed after creation.
        * @example 10.43.0.0/16
        */
       service_cidr?: string;
       /**
-       * @description Who can reach the API server. `private` (the default) is reachable only from inside the VPC. `public` and `dual` give the API server a public address of its own, billed as a VPC public IP for every hour it is held.
+       * @description Who can reach the API server. `private` (the default) is reachable only from inside the VPC. `public` and `dual` give the API server a public address of its own, billed as a VPC public IP for every hour it is held, and open its port 6443 on the subnet's network rules to `api_allowed_cidrs` (any address when that is empty). Those rules are numbered from 30000, after your own firewall rules, so a deny rule of yours still applies first; they are removed when the cluster goes private or is deleted.
        * @default private
        * @example private
        * @enum {string}
        */
-      endpoint_access: "private" | "public" | "dual";
+      endpoint_access?: "private" | "public" | "dual";
     };
     /** @description The platform's autoscaler: about once a minute it adds a worker when a pod that a worker could run is waiting for room, and removes the newest worker once it has run nothing but DaemonSet pods for 10 minutes, one step at a time and always within min_workers and max_workers. You pay for the workers that run. */
     KubernetesAutoscaling: {
@@ -3588,17 +3831,17 @@ export interface components {
     };
     UpgradeKubernetesNetworkRequest: {
       /**
-       * @description The new CNI plugin (`flannel`, `wireguard`, or `calico`).
+       * @description The new CNI plugin (`flannel`, `wireguard`, or `calico`). Fixed at creation: a value different from the cluster's current one is `409 KUBERNETES_NETWORK_NOT_CHANGEABLE`.
        * @example wireguard
        */
       cni_plugin?: string;
       /**
-       * @description The new IPv4 CIDR range allocated for cluster pods.
+       * @description The new IPv4 CIDR range allocated for cluster pods. Fixed at creation: a value different from the cluster's current one is `409 KUBERNETES_NETWORK_NOT_CHANGEABLE`.
        * @example 10.42.0.0/16
        */
       pod_cidr?: string;
       /**
-       * @description The new IPv4 CIDR range allocated for cluster services.
+       * @description The new IPv4 CIDR range allocated for cluster services. Fixed at creation: a value different from the cluster's current one is `409 KUBERNETES_NETWORK_NOT_CHANGEABLE`.
        * @example 10.43.0.0/16
        */
       service_cidr?: string;
@@ -3653,7 +3896,7 @@ export interface components {
       in_sync: boolean;
       failure_code: string | null;
       failure_reason: string | null;
-      /** @description Versions this cluster can be upgraded to now. */
+      /** @description Versions this cluster can be upgraded to now. Empty for a cluster that runs the version it was created with, which is every cluster today. */
       available_upgrades: components["schemas"]["KubernetesVersion"][];
       autoscaling: components["schemas"]["KubernetesAutoscaling"];
       /** @description Sources allowed to reach the API server; empty is any address. */
@@ -3670,6 +3913,24 @@ export interface components {
        * @example 6443
        */
       public_port?: number | null;
+      /**
+       * @description What Kubernetes last reported of the cluster's nodes while it runs: `healthy` (every node Ready), `degraded` (a node is NotReady, or fewer are Ready than the cluster should run) or `unknown` (the nodes could not be read in the last 15 minutes, for example a private endpoint whose agent is not connected). Read about every 5 minutes; null while the cluster is not running. Always `degraded`, with `node_health_reason`, while the cluster's pod or service range overlaps its own network.
+       * @example healthy
+       * @enum {string|null}
+       */
+      node_health?: "healthy" | "degraded" | "unknown" | null;
+      /** @description Why `node_health` is `degraded` when the cause is the cluster itself rather than a node's last reading: its `pod_cidr` or `service_cidr` overlaps the network its nodes are on (possible only for a cluster created before such ranges were refused). The ranges are fixed at creation, so the fix is a new cluster. Null otherwise. */
+      node_health_reason?: string | null;
+      /**
+       * @description Nodes Kubernetes reports Ready, as of `nodes_checked_at`; null when `node_health` is unknown or null.
+       * @example 2
+       */
+      ready_nodes?: number | null;
+      /**
+       * Format: date-time
+       * @description When the nodes were last read; null if never.
+       */
+      nodes_checked_at?: string | null;
       /** @description Storage your workloads' persistent volume claims use, billed with the nodes' disks. */
       volume_storage_gb: number;
       /**
@@ -3762,7 +4023,7 @@ export interface components {
       /** @description Worker nodes, 1 to 10. Required unless autoscaling_enabled, when it defaults to min_workers. */
       workers?: number;
       /** @default false */
-      autoscaling_enabled: boolean;
+      autoscaling_enabled?: boolean;
       /** @description With autoscaling_enabled: fewest workers, 1 to 10. */
       min_workers?: number;
       /** @description With autoscaling_enabled: most workers, min_workers to 10. Your credit and limits are checked for this many. */
@@ -3804,7 +4065,7 @@ export interface components {
     };
     ConfigureKubernetesEndpointAccessRequest: {
       /**
-       * @description Endpoint access mode.
+       * @description Endpoint access mode. `public` and `dual` open the API server's port 6443 on the subnet's network rules to `api_allowed_cidrs` (any address when empty); `private` removes those rules. The change is in sync (`in_sync` true) once the cluster is routed on its public address, or that address is released.
        * @enum {string}
        */
       endpoint_access: "public" | "private" | "dual";
@@ -3854,7 +4115,7 @@ export interface components {
        * @default static_nat
        * @enum {string}
        */
-      purpose: "static_nat" | "port_forwarding" | "load_balancer";
+      purpose?: "static_nat" | "port_forwarding" | "load_balancer";
       /**
        * @description For `static_nat` only: an instance in `network_id` without a public IP. Leave it out to reserve the address now and attach it later (`POST /public/v1/public-ips/{public_ip_id}/attach`). Leave out for `port_forwarding` and `load_balancer`.
        * @example vm_06gk3x9tq7m2v8r4y1c5d0zp8w
@@ -3996,7 +4257,7 @@ export interface components {
        * @default dbadmin
        * @example app_admin
        */
-      admin_username: string;
+      admin_username?: string;
       /**
        * @description Optional admin password: 16 to 128 printable ASCII characters, with no spaces, single quotes (`'`), double quotes (`"`) or backslashes (`\`). Write-only: never stored in plain text, never returned, never logged. Leave it out to have a 32-character password generated and returned once in the response.
        * @example c0rrect-H0rse-battery-St4ple
@@ -5066,12 +5327,12 @@ export interface components {
        * @description How many successful automatic snapshots to keep, 1 to 168; older ones are deleted. Defaults to 7.
        * @default 7
        */
-      retention_count: number;
+      retention_count?: number;
       /**
        * @description False pauses the schedule without forgetting it. Defaults to true.
        * @default true
        */
-      enabled: boolean;
+      enabled?: boolean;
     };
     RebuildRequest: {
       /**
@@ -5814,6 +6075,385 @@ export interface components {
       data: components["schemas"]["WebhookEventType"][];
       /** @description Always null: this list is returned whole. */
       next_cursor: string | null;
+    };
+    /** @description Why the last check or scan failed; null when it didn't. */
+    CloudFailure: {
+      /** @enum {string} */
+      code: "assume_role_denied" | "permission_missing" | "provider_unavailable" | "scan_too_large" | "internal";
+      /** @description What to do about it. */
+      message: string;
+    } | null;
+    /** @description What you need to create the role in your account. */
+    CloudConnectionSetup: {
+      /** @description Pantech's identity provider URL, which your role trusts. */
+      issuer_url: string;
+      /** @description The audience every token carries. */
+      audience: string;
+      /** @description The subject your role requires: this connection's id. */
+      subject: string;
+      /** @description Opens AWS's create-stack page with this template and connection filled in; null when not offered. */
+      quick_create_url: string | null;
+      /** @description A CloudFormation template (JSON) for this connection: a read-only role and, unless one exists, the identity provider. */
+      template: string;
+    };
+    CloudConnection: {
+      /** @example ccn_06gk3x9tq7m2v8r4y1c5d0zp8w */
+      id: string;
+      /** @enum {string} */
+      provider: "aws";
+      name: string;
+      /**
+       * @description `awaiting_role`, `verifying`, `connected` or `failed`.
+       * @enum {string}
+       */
+      status: "awaiting_role" | "verifying" | "connected" | "failed";
+      failure: components["schemas"]["CloudFailure"];
+      role_arn: string | null;
+      aws_account_id: string | null;
+      /** Format: date-time */
+      verified_at: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      setup: components["schemas"]["CloudConnectionSetup"];
+    };
+    CloudConnectionList: {
+      data: components["schemas"]["CloudConnection"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    CreateCloudConnectionRequest: {
+      /**
+       * @description `aws`, the default.
+       * @enum {string}
+       */
+      provider?: "aws";
+      /** @description 1 to 100 characters, for example `Production AWS`. */
+      name: string;
+    };
+    UpdateCloudConnectionRequest: {
+      name?: string;
+      /** @description The stack's RoleArn output. */
+      role_arn?: string;
+      /** @description Check the role again. */
+      retry?: boolean;
+    };
+    CloudScanCounts: {
+      instances: number;
+      volumes: number;
+      networks: number;
+      subnets: number;
+      security_groups: number;
+      public_ips: number;
+      load_balancers: number;
+      databases: number;
+      buckets: number;
+      users: number;
+      ssh_keys: number;
+    } | null;
+    CloudCostMonth: {
+      /** @description YYYY-MM. */
+      month: string;
+      amount_minor: number;
+    };
+    /** @description The source account's whole bill, every service. */
+    CloudCost: {
+      currency: string;
+      /** @description Average of the months, in minor units of currency. */
+      average_monthly_minor: number;
+      months: components["schemas"]["CloudCostMonth"][];
+    } | null;
+    CloudScan: {
+      /** @example csn_06gk3x9tq7m2v8r4y1c5d0zp8w */
+      id: string;
+      connection_id: string;
+      /** @enum {string} */
+      status: "queued" | "running" | "succeeded" | "failed";
+      failure: components["schemas"]["CloudFailure"];
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      started_at: string | null;
+      /** Format: date-time */
+      finished_at: string | null;
+      aws_account_id: string | null;
+      /** @description Regions read. */
+      regions: string[];
+      counts: components["schemas"]["CloudScanCounts"];
+      cost: components["schemas"]["CloudCost"];
+      /** @description Parts not read, e.g. `cost_unavailable` or `region_denied:eu-south-1`. */
+      warnings: string[];
+      /** @description Kinds cut at 2,000 items. */
+      truncated: string[];
+      inventory: components["schemas"]["CloudInventory"];
+    };
+    CloudScanList: {
+      data: components["schemas"]["CloudScan"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    MigrationListener: {
+      protocol: string;
+      port: number;
+    };
+    /** @description Everything a scan found. */
+    CloudInventory: {
+      instances: {
+        id: string;
+        name: string | null;
+        region: string;
+        zone: string | null;
+        instance_type: string;
+        state: string;
+        vcpu: number | null;
+        memory_mib: number | null;
+        architecture: string;
+        platform: string;
+        volume_ids: string[];
+        network_id: string | null;
+        subnet_id: string | null;
+        security_group_ids: string[];
+        public_ip: string | null;
+        private_ip: string | null;
+        key_name: string | null;
+        /** Format: date-time */
+        launched_at: string | null;
+      }[];
+      volumes: {
+        id: string;
+        region: string;
+        zone: string | null;
+        type: string;
+        size_gb: number;
+        attached_to: string | null;
+        device: string | null;
+        encrypted: boolean;
+      }[];
+      networks: {
+        id: string;
+        region: string;
+        name: string | null;
+        cidr: string;
+        is_default: boolean;
+      }[];
+      subnets: {
+        id: string;
+        region: string;
+        network_id: string;
+        name: string | null;
+        cidr: string;
+        zone: string | null;
+        maps_public_ip: boolean;
+      }[];
+      security_groups: {
+        id: string;
+        region: string;
+        network_id: string | null;
+        name: string;
+        description: string | null;
+        rules: {
+          /** @enum {string} */
+          direction: "ingress" | "egress";
+          protocol: string;
+          from_port: number | null;
+          to_port: number | null;
+          cidr: string | null;
+          ipv6_cidr: string | null;
+          source_group_id: string | null;
+          prefix_list_id: string | null;
+        }[];
+      }[];
+      public_ips: {
+        id: string;
+        region: string;
+        address: string;
+        instance_id: string | null;
+      }[];
+      load_balancers: {
+        id: string;
+        region: string;
+        name: string;
+        type: string;
+        scheme: string;
+        network_id: string | null;
+        listeners: components["schemas"]["MigrationListener"][];
+      }[];
+      databases: {
+        id: string;
+        region: string;
+        engine: string;
+        engine_version: string;
+        instance_class: string;
+        vcpu: number | null;
+        memory_mib: number | null;
+        storage_gb: number;
+        multi_az: boolean;
+        publicly_accessible: boolean;
+      }[];
+      buckets: {
+        name: string;
+        region: string | null;
+        /** Format: date-time */
+        created_at: string | null;
+      }[];
+      users: {
+        name: string;
+        email: string | null;
+        is_admin: boolean;
+        /** Format: date-time */
+        created_at: string | null;
+      }[];
+      ssh_keys: {
+        name: string;
+        region: string;
+        fingerprint: string | null;
+        public_key: string | null;
+      }[];
+    } | null;
+    MigrationFlag: {
+      code: string;
+      message: string;
+      /** @description A blocking flag makes the item unsupported. */
+      blocking: boolean;
+    };
+    MigrationRule: {
+      /** @enum {string} */
+      direction: "ingress" | "egress";
+      /** @enum {string} */
+      protocol: "tcp" | "udp" | "icmp" | "all";
+      port_range: string | null;
+      cidr: string;
+    };
+    /** @description What the item becomes on Pantech; fields that don't apply to its kind are null or empty. */
+    MigrationItemTarget: {
+      plan_slug: string | null;
+      disk_gb: number | null;
+      cidr: string | null;
+      network_key: string | null;
+      subnet_key: string | null;
+      instance_key: string | null;
+      rules: components["schemas"]["MigrationRule"][];
+      engine: string | null;
+      engine_version: string | null;
+      storage_gb: number | null;
+      /** @enum {string|null} */
+      role: "admin" | "member" | null;
+      email: string | null;
+      public_key: string | null;
+      listeners: components["schemas"]["MigrationListener"][];
+    };
+    MigrationItemSource: {
+      id: string;
+      name: string | null;
+      region: string | null;
+      summary: string;
+      vcpu: number | null;
+      memory_mib: number | null;
+      disk_gb: number | null;
+    };
+    MigrationItem: {
+      /** @description Stable across edits: kind, region and the source id. */
+      key: string;
+      /** @enum {string} */
+      kind:
+        | "network"
+        | "subnet"
+        | "security_group"
+        | "instance"
+        | "volume"
+        | "public_ip"
+        | "load_balancer"
+        | "database"
+        | "ssh_key"
+        | "user"
+        | "bucket";
+      source: components["schemas"]["MigrationItemSource"];
+      /** @enum {string} */
+      status: "planned" | "excluded" | "unsupported";
+      flags: components["schemas"]["MigrationFlag"][];
+      target: components["schemas"]["MigrationItemTarget"];
+    };
+    /** @description Pantech's monthly price for the plan next to the source's monthly bill, computed when read. */
+    MigrationEstimate: {
+      currency: string;
+      /** @description False when part of the plan could not be priced; then pantech_monthly_minor is null. */
+      pantech_priced: boolean;
+      pantech_monthly_minor: number | null;
+      /** @description What the Pantech price includes: servers, volumes, networks. */
+      covers: string[];
+      /** @description Planned items the price leaves out, e.g. databases. */
+      not_covered: string[];
+      source_known: boolean;
+      source_monthly_minor: number | null;
+      source_currency: string | null;
+      source_months: number;
+      /**
+       * @description `whole_account`: the source figure is the whole cloud bill.
+       * @enum {string}
+       */
+      source_scope: "whole_account";
+    } | null;
+    MigrationSummary: {
+      planned: number;
+      excluded: number;
+      unsupported: number;
+      /** @description Planned items per kind. */
+      by_kind: {
+        [key: string]: number;
+      };
+    };
+    Migration: {
+      /** @example mig_06gk3x9tq7m2v8r4y1c5d0zp8w */
+      id: string;
+      name: string;
+      region: string;
+      connection_id: string;
+      scan_id: string;
+      /**
+       * @description `planning`. Copying arrives in a later release.
+       * @enum {string}
+       */
+      stage: "planning";
+      version: number;
+      summary: components["schemas"]["MigrationSummary"];
+      estimate: components["schemas"]["MigrationEstimate"];
+      /** @description Null in a list. */
+      items: components["schemas"]["MigrationItem"][] | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    MigrationList: {
+      data: components["schemas"]["Migration"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    CreateMigrationRequest: {
+      scan_id: string;
+      name: string;
+      /** @description A Pantech region code; the first region when left out. */
+      region?: string;
+    };
+    RenameMigrationRequest: {
+      name: string;
+    };
+    UpdateMigrationItemRequest: {
+      key: string;
+      excluded?: boolean;
+      plan_slug?: string;
+      storage_gb?: number;
+      cidr?: string;
+      /** @enum {string} */
+      role?: "member" | "admin";
+      email?: string;
+    };
+    MigrationTerraform: {
+      files: {
+        name: string;
+        content: string;
+      }[];
     };
   };
   responses: {
@@ -11309,6 +11949,8 @@ export interface operations {
        *     `subnet_id` `SUBNET_NOT_IN_NETWORK`: the subnet is not in the public IP's private network.
        *     `instance_ids` `INSTANCE_NOT_IN_SUBNET`: every instance must be in the load balancer's subnet.
        *     `instance_ids` `TOO_MANY`: at most 50 instances.
+       *     `protocol` `LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`: only `tcp` listeners are offered. HTTP and HTTPS are balanced as `tcp` and reach your instances unchanged, so serve TLS on the instances.
+       *     `public_port` `LOAD_BALANCER_PORT_RESERVED`: an `appliance` load balancer cannot listen on 8404 or 8405; those ports run the load balancer itself.
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
        */
       422: {
@@ -12714,6 +13356,8 @@ export interface operations {
        *     `control_nodes` `INVALID_KUBERNETES_CONTROL_NODES` or `KUBERNETES_HA_NOT_AVAILABLE`: 1, or 3 where offered.
        *     `autoscaling` `INVALID_KUBERNETES_AUTOSCALING`: min_workers and max_workers 1 to 10, min no more than max, and workers within them.
        *     `api_allowed_cidrs` `INVALID_API_ALLOWED_CIDRS` (at most 20 IPv4 CIDRs) or `API_ALLOWED_CIDRS_VPC_ONLY`.
+       *     `pod_cidr` `KUBERNETES_POD_CIDR_OVERLAP`: the pod range overlaps the cluster's VPC network, its subnet or `service_cidr`. Choose a range clear of them, or leave it out.
+       *     `service_cidr` `KUBERNETES_SERVICE_CIDR_OVERLAP`: the service range overlaps the cluster's VPC network, its subnet or `pod_cidr`. Choose a range clear of them, or leave it out.
        *     `subnet_id` `KUBERNETES_SUBNET_REQUIRED`, `KUBERNETES_SUBNET_NOT_ALLOWED` or `KUBERNETES_SUBNET_NOT_FOUND`: an active subnet in a VPC zone, and none in a standard zone.
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`).
        */
@@ -13069,6 +13713,7 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
+       *     `KUBERNETES_UPGRADE_NOT_AVAILABLE`: the cluster runs the version it was created with and cannot be upgraded in place. Create a new cluster on the version you need.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
       409: {
@@ -13180,6 +13825,7 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
+       *     `KUBERNETES_NODE_PLAN_NOT_CHANGEABLE`: a different `node_plan`. A cluster's node plan is fixed at creation; add a node pool on the plan you need, or create a new cluster on it.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
       409: {
@@ -13291,6 +13937,7 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
+       *     `KUBERNETES_NETWORK_NOT_CHANGEABLE`: `cni_plugin`, `pod_cidr` and `service_cidr` are set when the cluster is created and cannot be changed. Create a new cluster with the settings you need. Only `api_allowed_cidrs` changes here.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
       409: {
@@ -15652,7 +16299,8 @@ export interface operations {
       };
       /**
        * @description `INVALID_RESOURCE_STATE`: the subnet still has instances or databases, or is already being deleted. Delete them first.
-       *     `SUBNET_HAS_KUBERNETES_CLUSTERS`: Kubernetes clusters still run in this subnet. Delete them first.
+       *     `SUBNET_HAS_KUBERNETES_CLUSTERS`: Kubernetes clusters still run in this subnet, or the nodes of a cluster you deleted are still being removed (they are removed in the background, which can take up to an hour after the delete). Delete the clusters first, then retry.
+       *     `SUBNET_HAS_LOAD_BALANCERS`: load balancers still sit on this subnet, or one you deleted is still being removed. Delete them first, then retry; a deleted load balancer is removed within a few minutes.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {
@@ -17796,6 +18444,929 @@ export interface operations {
       429: components["responses"]["RateLimited"];
       /**
        * @description `WEBHOOKS_UNAVAILABLE`: webhooks are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listCloudConnections: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Cloud connections. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudConnectionList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createCloudConnection: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateCloudConnectionRequest"];
+      };
+    };
+    responses: {
+      /** @description The connection, with its setup. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudConnection"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used with a different request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is invalid; `errors` names it. `provider` must be `aws`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getCloudConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The connection. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudConnection"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteCloudConnection: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Disconnected. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateCloudConnection: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateCloudConnectionRequest"];
+      };
+    };
+    responses: {
+      /** @description The connection. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudConnection"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CONFLICT`: the connection changed at the same time. Read it again and retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is invalid; `errors` names it. `role_arn` must be the stack's RoleArn output, like `arn:aws:iam::123456789012:role/name`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listCloudScans: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Scans. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudScanList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startCloudScan: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The queued scan. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudScan"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CLOUD_CONNECTION_NOT_CONNECTED`: finish connecting first. `CLOUD_CONNECTION_VERIFYING`: the connection is still being checked. `CLOUD_SCAN_IN_PROGRESS`: a scan is already running. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used for another connection. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getCloudScan: {
+    parameters: {
+      query?: {
+        /** @description `inventory` returns everything the scan found. */
+        include?: "inventory";
+      };
+      header?: never;
+      path: {
+        scan_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The scan. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudScan"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_SCAN_NOT_FOUND`: no scan with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listMigrations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Migrations. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MigrationList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createMigration: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateMigrationRequest"];
+      };
+    };
+    responses: {
+      /** @description The plan. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Migration"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_SCAN_NOT_FOUND`: no scan with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CLOUD_SCAN_NOT_READY`: the scan has not succeeded. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used with another scan. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is invalid; `errors` names it. `region` must be a Pantech region code. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getMigration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The plan. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Migration"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteMigration: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  renameMigration: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenameMigrationRequest"];
+      };
+    };
+    responses: {
+      /** @description The plan. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Migration"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CONFLICT`: the plan changed at the same time. Read it again and retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is invalid; `errors` names it. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateMigrationItem: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateMigrationItemRequest"];
+      };
+    };
+    responses: {
+      /** @description The plan. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Migration"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CONFLICT`: the plan changed at the same time. Read it again and retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `key` names no item (`UNKNOWN_ITEM`), or the change doesn't apply to it (`INVALID_TARGET`). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  exportMigrationTerraform: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The files. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MigrationTerraform"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
        *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
        */
       503: {

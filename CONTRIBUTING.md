@@ -55,7 +55,8 @@ npm test
 ```
 
 Add a method for any new operation, add it to the table in `test/coverage.test.ts`, and commit
-the generated files.
+the generated files. An operation the SDK deliberately leaves out goes in
+`scripts/not-in-sdk.json` instead, with the reason; `npm run generate` then leaves out its types.
 
 ## Guidelines
 

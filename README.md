@@ -6,7 +6,7 @@
 
 The official client for the [Pantech Dynamics public API](https://docs.pantechdynamics.com/api):
 instances, VPC networks, firewalls, public IPs, load balancers, volumes, snapshots, managed
-databases, managed Kubernetes, SSH keys, webhooks, billing and usage.
+databases, managed Kubernetes, SSH keys, webhooks, billing, usage, and moving from another cloud.
 
 - Zero runtime dependencies. Uses the global `fetch` and Web Crypto, so it runs on Node.js 18+,
   Bun, Deno and edge runtimes.
@@ -75,9 +75,11 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 | Databases | `databases.*`, `databases.snapshots.*`, `databaseOrders.wait(order)` |
 | SSH keys, webhooks | `sshKeys.*`, `webhooks.*`, `webhooks.deliveries.*` |
 | Billing and usage | `billing.credit.get()`, `billing.credit.purchases.create(...)`, `billing.receipts.getPdf(id)`, `usage.get()` |
+| Move from another cloud | `migrate.connections.*`, `migrate.scans.*`, `migrate.migrations.*` |
 | Operations | `operations.get(id)`, `operations.wait(id)`, `operations.stream(id)` |
 
-Every operation in the public spec has a method; `test/coverage.test.ts` fails if one is missing.
+Every operation in the public spec has a method, except agent sessions, which answer only AI apps
+connected through Pantech's MCP server; `test/coverage.test.ts` fails if one is missing.
 For anything else, `client.request({ method, path, query, body })` sends a raw request with the
 same auth, retries and errors.
 
@@ -101,7 +103,29 @@ for await (const o of client.operations.stream("op_…")) console.log(o.status);
 ```
 
 A failed operation rejects with `OperationFailedError` (`code`, `detail` from its `failure`), a
-failed or unpaid order with `OrderFailedError`, and a wait that runs out with `WaitTimeoutError`.
+failed or unpaid order with `OrderFailedError`, a failed cloud connection or scan with
+`CloudFailedError`, and a wait that runs out with `WaitTimeoutError`.
+
+## Move from another cloud
+
+`client.migrate` connects an AWS account through a read-only role that only Pantech can assume (no
+access keys are shared), scans what runs there, and plans the move with a price comparison and a
+Terraform export. Nothing is created on Pantech until you apply the Terraform.
+
+```ts
+let conn = await client.migrate.connections.create({ name: "Production AWS" });
+console.log(conn.setup.quick_create_url); // create the stack in AWS, then send its RoleArn output
+await client.migrate.connections.update(conn.id, { role_arn: "arn:aws:iam::…:role/…" });
+conn = await client.migrate.connections.wait(conn.id); // CloudFailedError if the role cannot be assumed
+
+const scan = await client.migrate.scans.wait((await client.migrate.scans.start(conn.id)).id);
+const plan = await client.migrate.migrations.create({ scan_id: scan.id, name: "Move to Pantech" });
+console.log(plan.estimate?.pantech_monthly_minor, plan.estimate?.source_monthly_minor);
+const { files } = await client.migrate.migrations.exportTerraform(plan.id); // main.tf, variables.tf
+```
+
+`migrate.migrations.updateItem(id, { key, excluded: true })` leaves an item out, or changes its
+plan, size, address range or role, before you export. See `examples/migrate-from-aws.ts`.
 
 ## Errors
 
@@ -156,7 +180,7 @@ the timestamp is too old. On Node.js 18, start node with `--experimental-global-
 
 ## Examples
 
-`examples/` has `create-instance.ts`, `list.ts` and `webhook-receiver.ts`. With Node.js 23.6+:
+`examples/` has `create-instance.ts`, `list.ts`, `webhook-receiver.ts` and `migrate-from-aws.ts`. With Node.js 23.6+:
 `npm run build && PANTECH_API_KEY=PAN_… node examples/list.ts`.
 
 ## Development

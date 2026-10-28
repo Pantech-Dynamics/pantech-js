@@ -129,6 +129,19 @@ export class OrderFailedError extends PantechError {
   }
 }
 /** Waiting for an operation or order took longer than `timeoutMs`. */
+/** A cloud connection's check or a scan ended `failed`. `code` is stable; `detail` says what to do. */
+export class CloudFailedError extends PantechError {
+  override name = "CloudFailedError";
+  /** `connection` or `scan`. */
+  readonly kind: "connection" | "scan";
+  /** The failed connection or scan, as the API returned it. */
+  readonly resource: unknown;
+  constructor(message: string, kind: "connection" | "scan", resource: unknown, init: PantechErrorInit = {}) {
+    super(message, init);
+    this.kind = kind;
+    this.resource = resource;
+  }
+}
 export class WaitTimeoutError extends PantechError {
   override name = "WaitTimeoutError";
 }

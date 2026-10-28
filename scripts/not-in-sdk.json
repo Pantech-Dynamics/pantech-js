@@ -1,0 +1,13 @@
+{
+  "getInstanceAgent": "agent sessions: MCP-connected AI apps only",
+  "startAgentSession": "agent sessions: MCP-connected AI apps only",
+  "listAgentSessions": "agent sessions: MCP-connected AI apps only",
+  "getAgentSession": "agent sessions: MCP-connected AI apps only",
+  "messageAgentSession": "agent sessions: MCP-connected AI apps only",
+  "callAgentTool": "agent sessions: MCP-connected AI apps only",
+  "getAgentToolCall": "agent sessions: MCP-connected AI apps only",
+  "listAgentSessionEvents": "agent sessions: MCP-connected AI apps only",
+  "decideAgentApproval": "agent sessions: MCP-connected AI apps only",
+  "terminateAgentSession": "agent sessions: MCP-connected AI apps only",
+  "getAgentSessionReport": "agent sessions: MCP-connected AI apps only"
+}

@@ -184,6 +184,22 @@ const table: Record<string, Call> = {
   listWebhookDeliveries: (c) => c.webhooks.deliveries.list(X),
   getWebhookDelivery: (c) => c.webhooks.deliveries.get(X, Y),
   redeliverWebhook: (c) => c.webhooks.deliveries.redeliver(X, Y),
+  // Migrate
+  listCloudConnections: (c) => c.migrate.connections.list(),
+  createCloudConnection: (c) => c.migrate.connections.create(B),
+  getCloudConnection: (c) => c.migrate.connections.get(X),
+  updateCloudConnection: (c) => c.migrate.connections.update(X, B),
+  deleteCloudConnection: (c) => c.migrate.connections.delete(X),
+  listCloudScans: (c) => c.migrate.scans.list(X),
+  startCloudScan: (c) => c.migrate.scans.start(X),
+  getCloudScan: (c) => c.migrate.scans.get(X),
+  listMigrations: (c) => c.migrate.migrations.list(),
+  createMigration: (c) => c.migrate.migrations.create(B),
+  getMigration: (c) => c.migrate.migrations.get(X),
+  renameMigration: (c) => c.migrate.migrations.rename(X, B),
+  deleteMigration: (c) => c.migrate.migrations.delete(X),
+  updateMigrationItem: (c) => c.migrate.migrations.updateItem(X, B),
+  exportMigrationTerraform: (c) => c.migrate.migrations.exportTerraform(X),
   // Operations
   getOperation: (c) => c.operations.get(X),
   streamOperation: (c) => c.operations.stream(X).next(),
@@ -197,6 +213,14 @@ const table: Record<string, Call> = {
 const byRoute: Record<string, Call> = {
   "DELETE /me": (c) => c.me.revoke(),
 };
+
+/**
+ * Spec operations the SDK deliberately has no method for yet, with the
+ * reason. `npm run generate` leaves out their types too.
+ */
+const notInSdk: Record<string, string> = JSON.parse(
+  readFileSync(new URL("../scripts/not-in-sdk.json", import.meta.url), "utf8"),
+);
 
 interface SpecOperation {
   operationId: string;
@@ -237,8 +261,15 @@ describe("spec coverage", () => {
   });
 
   it("maps every spec operation to an SDK method", () => {
-    const missing = ops.filter((op) => !table[op.operationId] && !byRoute[`${op.method} ${op.path}`]);
+    const missing = ops.filter(
+      (op) => !table[op.operationId] && !byRoute[`${op.method} ${op.path}`] && !notInSdk[op.operationId],
+    );
     expect(missing.map((op) => `${op.operationId} (${op.method} ${op.path})`)).toEqual([]);
+  });
+
+  it("leaves out only operations the spec has and the table does not", () => {
+    const ids = new Set(ops.map((op) => op.operationId));
+    expect(Object.keys(notInSdk).filter((id) => !ids.has(id) || table[id])).toEqual([]);
   });
 
   it("has no table entry for an operation the spec does not have", () => {

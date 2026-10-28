@@ -18,6 +18,7 @@ import { InstanceOrders, Instances } from "./resources/instances.js";
 import { Kubernetes } from "./resources/kubernetes.js";
 import { LoadBalancers } from "./resources/load-balancers.js";
 import { MeResource } from "./resources/me.js";
+import { Migrate } from "./resources/migrate.js";
 import { Networks } from "./resources/networks.js";
 import { Operations } from "./resources/operations.js";
 import { PublicIps } from "./resources/public-ips.js";
@@ -136,6 +137,8 @@ export class Pantech {
   readonly databaseOrders: DatabaseOrders;
   readonly sshKeys: SshKeys;
   readonly webhooks: Webhooks;
+  /** Move from another cloud: connections, scans and migration plans. */
+  readonly migrate: Migrate;
   readonly operations: Operations;
 
   constructor(options: ClientOptions = {}) {
@@ -180,6 +183,7 @@ export class Pantech {
     this.databaseOrders = new DatabaseOrders(this);
     this.sshKeys = new SshKeys(this);
     this.webhooks = new Webhooks(this);
+    this.migrate = new Migrate(this);
   }
 
   /**
