@@ -1501,7 +1501,7 @@ export interface paths {
     };
     /**
      * List load balancers
-     * @description Your load balancers, newest first, each with its targets. Deleted and failed ones are left out. Narrow it with `network_id` or `public_ip_id`.
+     * @description Your load balancers, newest first, each with its targets. Deleted ones are left out; one whose create failed stays listed with status `failed` until you delete it. Narrow it with `network_id` or `public_ip_id`.
      *
      *     **Scope:** `read`.
      */
@@ -1835,7 +1835,7 @@ export interface paths {
     };
     /**
      * List Kubernetes versions
-     * @description The Kubernetes versions you can create clusters with, newest first, each in one zone. `ha_zone_ids` are the zones where a highly available control plane (3 control nodes) can be created now. A version is withdrawn from new clusters before its upstream end of life; clusters already on it keep running it.
+     * @description The Kubernetes versions you can create clusters with, newest first, each in one zone. `ha_zone_ids` are the zones where a highly available control plane (3 control nodes) can be created now, and `fixed_node_sizes` the zones that build nodes only at fixed sizes, one entry per size, where only a plan of one of those sizes is accepted. A version is withdrawn from new clusters before its upstream end of life; clusters already on it keep running it.
      *
      *     **Scope:** `read`.
      */
@@ -1961,9 +1961,11 @@ export interface paths {
     put?: never;
     /**
      * Change the cluster's node plan
-     * @description A cluster's node plan is set when it is created and cannot be changed: its nodes keep the size they were built with. Sending a different `node_plan` is refused with `409 KUBERNETES_NODE_PLAN_NOT_CHANGEABLE` and nothing is recorded or billed; sending the plan the cluster already runs changes nothing.
+     * @description Moves the cluster's control node and default workers to another node plan, one node at a time. Each worker is drained (its pods are moved to the other nodes, within their disruption budgets), stopped, given the new size and a larger disk, and started again, and the next node waits until it has rejoined the cluster. The control node goes last; the Kubernetes API is unavailable for the minutes it restarts, while workloads keep running. A cluster with one worker has no other node to move its pods to while that worker restarts.
      *
-     *     For bigger nodes, add a node pool on the plan you need (`POST /public/v1/kubernetes-clusters/{cluster_id}/node-pools`), or create a new cluster on it and move your workloads there.
+     *     The cluster keeps its current plan, and is billed at it, until every node runs the new one. If the change cannot finish (for example, there is no room for the larger nodes), the nodes are moved back to the plan the cluster had and the operation fails with `KUBERNETES_NODE_RESIZE_FAILED`.
+     *
+     *     A node's disk can only grow: a plan with a smaller disk than the nodes have is refused with `409 KUBERNETES_NODE_DISK_CANNOT_SHRINK`. Sending the plan the cluster already runs changes nothing. Node pools keep their own plans.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`.
      *
@@ -2067,7 +2069,7 @@ export interface paths {
     put?: never;
     /**
      * Download a kubeconfig
-     * @description The cluster's admin kubeconfig, for `kubectl`. It holds a long-lived cluster-admin credential: store it like a password. It is fetched fresh on each call and is not kept by the platform. Available while the cluster is running. It is a `POST` that needs a `write` key so that a read-only key can never fetch a cluster-admin credential; the response is `Cache-Control: no-store`.
+     * @description The cluster's admin kubeconfig, for `kubectl`. It holds a long-lived cluster-admin credential: store it like a password. It is fetched fresh on each call and is not kept by the platform; each download is recorded (who, which key, when). Available while the cluster is running. It is a `POST` that needs a `write` key so that a read-only key can never fetch a cluster-admin credential; the response is `Cache-Control: no-store`.
      *
      *     **Scope:** `write`.
      */
@@ -2181,7 +2183,7 @@ export interface paths {
      *
      *     Public routing needs a cluster in a VPC subnet: it uses the VPC's public address. Port 22 and the cluster's API port are reserved.
      *
-     *     Errors: `404 KUBERNETES_CLUSTER_NOT_FOUND`; `404 KUBERNETES_SERVICE_NOT_FOUND` (apply the Service first); `409 PORT_IN_USE` (another service, cluster or resource uses that public port; choose another); `409 KUBERNETES_ROUTING_UNAVAILABLE` (a cluster with no VPC address); `409 KUBERNETES_CLUSTER_NOT_RUNNING`; `422 VALIDATION_FAILED` (`service_name`, `public_port` or `node_port`; or `INVALID_KUBERNETES_MANIFEST` when the cluster refused the change); `503 KUBERNETES_API_UNREACHABLE` (retry).
+     *     Errors: `404 KUBERNETES_CLUSTER_NOT_FOUND`; `404 KUBERNETES_SERVICE_NOT_FOUND` (apply the Service first); `409 PORT_IN_USE` (another service, cluster or resource uses that public port; choose another); `409 KUBERNETES_ROUTING_UNAVAILABLE` (a cluster with no VPC address); `409 IP_POOL_EXHAUSTED` (no public address is free in the zone; try again later); `409 KUBERNETES_CLUSTER_NOT_RUNNING`; `422 VALIDATION_FAILED` (`service_name`, `public_port` or `node_port`; or `INVALID_KUBERNETES_MANIFEST` when the cluster refused the change); `503 KUBERNETES_API_UNREACHABLE` (retry).
      */
     post: operations["exposeKubernetesService"];
     delete?: never;
@@ -2205,7 +2207,7 @@ export interface paths {
      *
      *     Every cluster on a shared address gets its own API port: the first 6443, the next 6444, and so on. A new cluster's API port is routed automatically once it is running; call this after exposing or unexposing services with kubectl. If the API server does not answer, only its own route is ensured and no service route is removed.
      *
-     *     Errors: `404 KUBERNETES_CLUSTER_NOT_FOUND`; `409 PORT_IN_USE`; `409 KUBERNETES_ROUTING_UNAVAILABLE` (a cluster with no VPC address); `409 KUBERNETES_CLUSTER_NOT_RUNNING`.
+     *     Errors: `404 KUBERNETES_CLUSTER_NOT_FOUND`; `409 PORT_IN_USE`; `409 KUBERNETES_ROUTING_UNAVAILABLE` (a cluster with no VPC address); `409 IP_POOL_EXHAUSTED` (no public address is free in the zone; try again later); `409 KUBERNETES_CLUSTER_NOT_RUNNING`.
      */
     post: operations["syncKubernetesRouting"];
     delete?: never;
@@ -2229,7 +2231,7 @@ export interface paths {
     put?: never;
     /**
      * Create a node pool
-     * @description Adds a node pool: workers of their own plan, joined with the pool's labels, the label `pantech.io/node-pool=<name>` and the pool's taints, so workloads choose it with a nodeSelector and tolerations. Each worker is billed as a VM of the pool's plan once it has joined (`observed_workers`). With autoscaling on, the platform adds a worker when a pod the pool could run is waiting for room, and removes the newest one after 10 idle minutes. A pool's name is unique in its cluster: sending the same pool again is answered as a replay, another pool under a taken name is `409 NODE_POOL_NAME_TAKEN`. In a zone with one fixed node size (af-abj-2), the plan must be that size (`422 KUBERNETES_PLAN_NOT_IN_ZONE`).
+     * @description Adds a node pool: workers of their own plan, joined with the pool's labels, the label `pantech.io/node-pool=<name>` and the pool's taints, so workloads choose it with a nodeSelector and tolerations. Each worker is billed as a VM of the pool's plan once it has joined (`observed_workers`). With autoscaling on, the platform adds a worker when a pod the pool could run is waiting for room, and removes the newest one after 10 idle minutes. A pool's name is unique in its cluster: sending the same pool again is answered as a replay, another pool under a taken name is `409 NODE_POOL_NAME_TAKEN`. In a zone listed in `fixed_node_sizes` on the versions list, the plan must be one of that zone's sizes (`422 KUBERNETES_PLAN_NOT_IN_ZONE`).
      */
     post: operations["createKubernetesNodePool"];
     delete?: never;
@@ -3712,6 +3714,15 @@ export interface components {
       data: components["schemas"]["KubernetesVersion"][];
       /** @description Zones where a cluster can have 3 control nodes. */
       ha_zone_ids: string[];
+      /** @description Zones that build Kubernetes nodes only at fixed sizes, one entry per size, so a zone may appear more than once. There, a cluster, a node plan resize and a node pool take only a plan of exactly one entry's `vcpu` and `memory_mb`; anything else is `422 KUBERNETES_PLAN_NOT_IN_ZONE`. A zone not listed takes any plan that meets the version's minimum. */
+      fixed_node_sizes?: components["schemas"]["KubernetesFixedNodeSize"][];
+    };
+    KubernetesFixedNodeSize: {
+      zone_id: string;
+      /** @description The vCPUs of one node size the zone builds; 0 when the zone takes no plan now. */
+      vcpu: number;
+      /** @description The memory, in MB, of that node size; 0 when the zone takes no plan now. */
+      memory_mb: number;
     };
     CreateKubernetesClusterRequest: {
       /**
@@ -3732,7 +3743,7 @@ export interface components {
        */
       subnet_id?: string;
       /**
-       * @description The plan slug every node uses, from the plans list. In a zone where every node has one fixed size (af-abj-2: 2 vCPU, 4 GB), the plan must be that size: `422 KUBERNETES_PLAN_NOT_IN_ZONE` on `node_plan`. Fixed once the cluster is created: for bigger nodes later, add a node pool.
+       * @description The plan slug every node uses, from the plans list. In a zone listed in `fixed_node_sizes` on the versions list, the plan must be one of that zone's sizes: `422 KUBERNETES_PLAN_NOT_IN_ZONE` on `node_plan`. Change it later with the node plan resize, or add a node pool.
        * @example s-2vcpu-4gb
        */
       node_plan: string;
@@ -3878,7 +3889,7 @@ export interface components {
       /** @enum {string} */
       desired_state: "running" | "stopped" | "deleted";
       /**
-       * @description `updating` while a scale or upgrade runs.
+       * @description A new cluster reads `provisioning` until every node has joined and its kubeconfig can be downloaded, then `running`. `updating` while a scale or upgrade runs.
        * @enum {string}
        */
       observed_state:
@@ -3981,12 +3992,19 @@ export interface components {
     };
     KubernetesNodePool: {
       /**
-       * @description `provisioning` (workers being built), `ready` (every worker has joined), `updating` (a scale in progress), `deleting`, or `unavailable` (a pool made while node pools were a preview, with no node size: delete it and create it again).
+       * @description `provisioning` (workers being built), `ready` (every worker has joined), `updating` (a scale in progress), `deleting`, or `unavailable` (a pool made while node pools were a preview, with no node size: delete it and create it again). A pool whose workers cannot be built stays `provisioning` or `updating` and is retried; `failure_code` and `failure_reason` say why.
        * @enum {string}
        */
       status: "provisioning" | "ready" | "updating" | "deleting" | "unavailable";
       /** @description The pool's workers that have joined the cluster. This is what is billed, never `workers` alone. */
       observed_workers: number;
+      /**
+       * @description Why the pool's workers last failed to build, e.g. `PROVISIONING_CAPACITY_UNAVAILABLE` (the region has no room for them now) or `PROVISIONING_LIMIT_EXCEEDED`. Null while nothing has failed; cleared once the pool is `ready` or is scaled.
+       * @example PROVISIONING_CAPACITY_UNAVAILABLE
+       */
+      failure_code: string | null;
+      /** @description A sentence saying what failed and what to do. Null when `failure_code` is. */
+      failure_reason: string | null;
       /** @description e.g. `k8spool_...`. */
       id: string;
       cluster_id: string;
@@ -7162,6 +7180,7 @@ export interface operations {
        * @description `ACCOUNT_SUSPENDED`: an invoice is overdue, or the organization was suspended for non-payment. Pay the outstanding invoice in the console, then retry.
        *     `ACCOUNT_NOT_ACTIVE`: the organization's billing account is not active yet. Finish billing setup in the console (verify the organization and add a payment method), then retry.
        *     `DATABASE_NAME_TAKEN`: you already have a database with this name. Choose a different name.
+       *     `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used to order a different database. Use a new key for a different request; resend the same body to get the original order back.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {
@@ -8888,6 +8907,7 @@ export interface operations {
       };
       /**
        * @description `INSTANCE_NAME_TAKEN`: you already have an instance with this name. Choose a different name.
+       *     `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used to order a different instance. Use a new key for a different request; resend the same body to get the original order back.
        *     `ACCOUNT_SUSPENDED`: an invoice is overdue, or the organization was suspended for non-payment. Pay the outstanding invoice in the console, then retry.
        *     `ACCOUNT_NOT_ACTIVE`: the organization's billing account is not active yet. Finish billing setup in the console (verify the organization and add a payment method), then retry.
        *     `PROVIDER_ACCOUNT_NOT_READY`: your organization's cloud account is still being set up, which takes a few minutes after sign-up. Retry shortly.
@@ -12170,6 +12190,7 @@ export interface operations {
       };
       /**
        * @description `LOAD_BALANCER_NOT_CHANGEABLE`: the load balancer is being deleted or has failed.
+       *     `LOAD_BALANCER_NOT_READY`: the load balancer is still being created. Change it once its status is `active`.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {
@@ -13825,7 +13846,8 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
-       *     `KUBERNETES_NODE_PLAN_NOT_CHANGEABLE`: a different `node_plan`. A cluster's node plan is fixed at creation; add a node pool on the plan you need, or create a new cluster on it.
+       *     `KUBERNETES_NODE_DISK_CANNOT_SHRINK`: the plan's disk is smaller than the disks the cluster's nodes have. Choose a plan with at least the same disk.
+       *     `KUBERNETES_NODE_PLAN_NOT_CHANGEABLE`: this cluster's nodes cannot be resized. Add a node pool on the plan you need, or create a new cluster on it.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
       409: {
@@ -14227,6 +14249,7 @@ export interface operations {
       /**
        * @description `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
        *     `KUBERNETES_UNAVAILABLE`: managed Kubernetes is not open on this platform yet.
+       *     `KUBECONFIG_TEMPORARILY_UNAVAILABLE`: the download could not be recorded, so no kubeconfig was issued. Retry shortly.
        */
       503: {
         headers: {
@@ -14618,7 +14641,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description `PORT_IN_USE`, `KUBERNETES_ROUTING_UNAVAILABLE` or `KUBERNETES_CLUSTER_NOT_RUNNING`. */
+      /** @description `PORT_IN_USE`, `KUBERNETES_ROUTING_UNAVAILABLE`, `IP_POOL_EXHAUSTED` or `KUBERNETES_CLUSTER_NOT_RUNNING`. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -14698,7 +14721,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description `PORT_IN_USE`, `KUBERNETES_ROUTING_UNAVAILABLE` or `KUBERNETES_CLUSTER_NOT_RUNNING`. */
+      /** @description `PORT_IN_USE`, `KUBERNETES_ROUTING_UNAVAILABLE`, `IP_POOL_EXHAUSTED` or `KUBERNETES_CLUSTER_NOT_RUNNING`. */
       409: {
         headers: {
           [name: string]: unknown;

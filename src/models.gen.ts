@@ -14,6 +14,7 @@ export type LoadBalancer = components["schemas"]["LoadBalancer"];
 export type LoadBalancerList = components["schemas"]["LoadBalancerList"];
 export type KubernetesVersion = components["schemas"]["KubernetesVersion"];
 export type KubernetesVersionList = components["schemas"]["KubernetesVersionList"];
+export type KubernetesFixedNodeSize = components["schemas"]["KubernetesFixedNodeSize"];
 export type CreateKubernetesClusterRequest = components["schemas"]["CreateKubernetesClusterRequest"];
 export type KubernetesAutoscaling = components["schemas"]["KubernetesAutoscaling"];
 export type UpdateKubernetesClusterRequest = components["schemas"]["UpdateKubernetesClusterRequest"];
