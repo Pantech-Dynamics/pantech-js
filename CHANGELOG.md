@@ -4,7 +4,7 @@ A new version heading here (`## X.Y.Z (YYYY-MM-DD)`) pushed to main is
 tagged `vX.Y.Z` and published to npm. Add changes under `## Unreleased`
 until then.
 
-## Unreleased
+## 0.3.0 (2026-11-06)
 
 - `KubernetesFixedNodeSize` and `fixed_node_sizes` on the Kubernetes versions list: the zones
   that build nodes only at fixed sizes, one entry per size. Types regenerated from the current
