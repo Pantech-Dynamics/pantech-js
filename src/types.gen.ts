@@ -3474,6 +3474,36 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/databases/{database_id}/snapshot-schedule": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a database's snapshot schedule
+     * @description The database's automatic snapshot schedule: how often a snapshot of its data disk is taken, how many are kept, and when the next one runs.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDatabaseSnapshotSchedule"];
+    /**
+     * Set a database's snapshot schedule
+     * @description Turns automatic snapshots of the database's data disk on, changes them, or pauses them with `enabled: false`. `frequency` is `daily`, `weekly` or `monthly`; `retention_count` (1 to 168, default 7) successful snapshots are kept and older automatic ones are deleted. Automatic snapshots are billed like manual ones.
+     *
+     *     Returns the schedule at once (`200`); no operation to follow. Send an `Idempotency-Key`: a retry with the same key and settings returns the same schedule.
+     *
+     *     **Scope:** `write`. Lowering `retention_count` deletes the oldest copies, so an AI app's key also needs `delete` for that (`403 INSUFFICIENT_SCOPE` otherwise).
+     */
+    put: operations["putDatabaseSnapshotSchedule"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/volumes/{volume_id}/snapshot-schedule": {
     parameters: {
       query?: never;
@@ -8016,6 +8046,8 @@ export interface components {
       instance_id?: string | null;
       /** @description The volume snapshotted; null for an instance's schedule. */
       volume_id?: string | null;
+      /** @description The database whose data disk is snapshotted; null for an instance's or a volume's schedule. */
+      database_id?: string | null;
       /**
        * @description `daily`, `weekly` or `monthly`.
        * @enum {string}
@@ -19016,7 +19048,7 @@ export interface operations {
        * @description `INSUFFICIENT_SCOPE`: this API key has only the `read` scope. Use a key with `write` access.
        *     `FORBIDDEN`: the member who created this key may not do this in the organization, or has left it. Use a key created by an owner or admin.
        *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
-       *     `STATIC_NAT_LIMIT_EXCEEDED`: your organization has reached its limit of static NAT public IPs. Release one you no longer need, or contact support for a higher limit.
+       *     `STATIC_NAT_LIMIT_EXCEEDED`: your organization has reached its limit of static NAT public IPs, counted across all its projects (5 by default). Release one you no longer need, or contact support for a higher limit.
        *     `PUBLIC_IP_LIMIT_EXCEEDED`: your organization has reached its limit of public IPs of any purpose (20 by default). Release one you no longer need, or contact support for a higher limit.
        */
       403: {
@@ -23805,6 +23837,149 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
+    };
+  };
+  getDatabaseSnapshotSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource's id. */
+        database_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The schedule. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SnapshotSchedule"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `RESOURCE_NOT_FOUND`: no database with this id in your organization, or the id is not a database id (`db_…`). Check the id.
+       *     `SNAPSHOT_SCHEDULE_NOT_FOUND`: no schedule has been set for this resource. Set one with the `PUT` on this path.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      503: components["responses"]["QuotaUnavailable"];
+    };
+  };
+  putDatabaseSnapshotSchedule: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The resource's id. */
+        database_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PutSnapshotScheduleRequest"];
+      };
+    };
+    responses: {
+      /** @description The schedule. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SnapshotSchedule"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `RESOURCE_NOT_FOUND`: no database with this id in your organization, or the id is not a database id (`db_…`). Check the id. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used with different settings. Use a new key for a different request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `frequency` `REQUIRED`: send `daily`, `weekly` or `monthly`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       *     `VALIDATION_FAILED` with no `errors` entry: `frequency` is not `daily`, `weekly` or `monthly`, or `retention_count` is outside 1 to 168.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      503: components["responses"]["QuotaUnavailable"];
     };
   };
   getVolumeSnapshotSchedule: {

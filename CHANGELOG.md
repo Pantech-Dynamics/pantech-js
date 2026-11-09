@@ -6,6 +6,9 @@ until then.
 
 ## Unreleased
 
+- `databases.getSnapshotSchedule` and `databases.setSnapshotSchedule`: automatic snapshots of a
+  database's data disk, as for instances and volumes.
+
 ## 0.5.0 (2026-11-24)
 
 - Dynamic IP for instances: `instances.dynamicIp` (`get`, `set`, `disable`, and non-retrying
