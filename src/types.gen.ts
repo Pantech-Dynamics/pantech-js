@@ -1961,11 +1961,11 @@ export interface paths {
     put?: never;
     /**
      * Change the cluster's node plan
-     * @description Moves the cluster's control node and default workers to another node plan, one node at a time. Each worker is drained (its pods are moved to the other nodes, within their disruption budgets), stopped, given the new size and a larger disk, and started again, and the next node waits until it has rejoined the cluster. The control node goes last; the Kubernetes API is unavailable for the minutes it restarts, while workloads keep running. A cluster with one worker has no other node to move its pods to while that worker restarts.
+     * @description Moves the cluster's control node and default workers to another node plan, one node at a time. Each worker is drained (its pods are moved to the other nodes, within their disruption budgets), stopped, given the new size (and a larger disk, if the plan's is larger), and started again, and the next node waits until it has rejoined the cluster. The control node goes last; the Kubernetes API is unavailable for the minutes it restarts, while workloads keep running. A cluster with one worker has no other node to move its pods to while that worker restarts.
      *
      *     The cluster keeps its current plan, and is billed at it, until every node runs the new one. If the change cannot finish (for example, there is no room for the larger nodes), the nodes are moved back to the plan the cluster had and the operation fails with `KUBERNETES_NODE_RESIZE_FAILED`.
      *
-     *     A node's disk can only grow: a plan with a smaller disk than the nodes have is refused with `409 KUBERNETES_NODE_DISK_CANNOT_SHRINK`. Sending the plan the cluster already runs changes nothing. Node pools keep their own plans.
+     *     A node's disk can only grow, so moving to a plan with a smaller disk changes the nodes' vCPU and memory and they keep the disk they have; `node.disk_gb` shows it. Sending the plan the cluster already runs changes nothing. Node pools keep their own plans.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`.
      *
@@ -2870,6 +2870,36 @@ export interface paths {
      *     **Scope:** `write`.
      */
     post: operations["resizeVolume"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/databases/{database_id}/snapshot-schedule": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a database's snapshot schedule
+     * @description The database's automatic snapshot schedule: how often a snapshot of its data disk is taken, how many are kept, and when the next one runs.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDatabaseSnapshotSchedule"];
+    /**
+     * Set a database's snapshot schedule
+     * @description Turns automatic snapshots of the database's data disk on, changes them, or pauses them with `enabled: false`. `frequency` is `daily`, `weekly` or `monthly`; `retention_count` (1 to 168, default 7) successful snapshots are kept and older automatic ones are deleted. Automatic snapshots are billed like manual ones.
+     *
+     *     Returns the schedule at once (`200`); no operation to follow. Send an `Idempotency-Key`: a retry with the same key and settings returns the same schedule.
+     *
+     *     **Scope:** `write`. Lowering `retention_count` deletes the oldest copies, so an AI app's key also needs `delete` for that (`403 INSUFFICIENT_SCOPE` otherwise).
+     */
+    put: operations["putDatabaseSnapshotSchedule"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -5611,6 +5641,8 @@ export interface components {
       instance_id?: string | null;
       /** @description The volume snapshotted; null for an instance's schedule. */
       volume_id?: string | null;
+      /** @description The database whose data disk is snapshotted; null for an instance's or a volume's schedule. */
+      database_id?: string | null;
       /**
        * @description `daily`, `weekly` or `monthly`.
        * @enum {string}
@@ -12498,7 +12530,7 @@ export interface operations {
        * @description `INSUFFICIENT_SCOPE`: this API key has only the `read` scope. Use a key with `write` access.
        *     `FORBIDDEN`: the member who created this key may not do this in the organization, or has left it. Use a key created by an owner or admin.
        *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
-       *     `STATIC_NAT_LIMIT_EXCEEDED`: your organization has reached its limit of static NAT public IPs. Release one you no longer need, or contact support for a higher limit.
+       *     `STATIC_NAT_LIMIT_EXCEEDED`: your organization has reached its limit of static NAT public IPs, counted across all its projects (5 by default). Release one you no longer need, or contact support for a higher limit.
        *     `PUBLIC_IP_LIMIT_EXCEEDED`: your organization has reached its limit of public IPs of any purpose (20 by default). Release one you no longer need, or contact support for a higher limit.
        */
       403: {
@@ -13846,7 +13878,6 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
-       *     `KUBERNETES_NODE_DISK_CANNOT_SHRINK`: the plan's disk is smaller than the disks the cluster's nodes have. Choose a plan with at least the same disk.
        *     `KUBERNETES_NODE_PLAN_NOT_CHANGEABLE`: this cluster's nodes cannot be resized. Add a node pool on the plan you need, or create a new cluster on it.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
@@ -17288,6 +17319,149 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
+    };
+  };
+  getDatabaseSnapshotSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource's id. */
+        database_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The schedule. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SnapshotSchedule"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `RESOURCE_NOT_FOUND`: no database with this id in your organization, or the id is not a database id (`db_…`). Check the id.
+       *     `SNAPSHOT_SCHEDULE_NOT_FOUND`: no schedule has been set for this resource. Set one with the `PUT` on this path.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      503: components["responses"]["QuotaUnavailable"];
+    };
+  };
+  putDatabaseSnapshotSchedule: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The resource's id. */
+        database_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PutSnapshotScheduleRequest"];
+      };
+    };
+    responses: {
+      /** @description The schedule. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SnapshotSchedule"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `RESOURCE_NOT_FOUND`: no database with this id in your organization, or the id is not a database id (`db_…`). Check the id. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used with different settings. Use a new key for a different request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `frequency` `REQUIRED`: send `daily`, `weekly` or `monthly`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       *     `VALIDATION_FAILED` with no `errors` entry: `frequency` is not `daily`, `weekly` or `monthly`, or `retention_count` is outside 1 to 168.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      503: components["responses"]["QuotaUnavailable"];
     };
   };
   getVolumeSnapshotSchedule: {

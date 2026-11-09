@@ -4,6 +4,11 @@ A new version heading here (`## X.Y.Z (YYYY-MM-DD)`) pushed to main is
 tagged `vX.Y.Z` and published to npm. Add changes under `## Unreleased`
 until then.
 
+## Unreleased
+
+- `databases.getSnapshotSchedule` and `databases.setSnapshotSchedule`: automatic snapshots of a
+  database's data disk, as for instances and volumes.
+
 ## 0.3.0 (2026-11-06)
 
 - `KubernetesFixedNodeSize` and `fixed_node_sizes` on the Kubernetes versions list: the zones
