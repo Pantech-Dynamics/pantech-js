@@ -64,9 +64,33 @@ export class BadRequestError extends PantechError {
 export class AuthenticationError extends PantechError {
   override name = "AuthenticationError";
 }
-/** `402`: the change costs more than the organization can pay, e.g. `INSUFFICIENT_CREDIT`. */
+/**
+ * `402`: the change costs more than the organization can pay, e.g.
+ * `INSUFFICIENT_CREDIT`. Also thrown by `domains.orders.wait()` for an order
+ * `awaiting_payment` (code `AWAITING_PAYMENT`), with its `paymentUrl`.
+ */
 export class PaymentRequiredError extends PantechError {
   override name = "PaymentRequiredError";
+  /**
+   * For a domain order waiting in `awaiting_payment`: the page where the bank
+   * asks the user to confirm the saved-card payment (US dollars only), when it
+   * does. Undefined when no confirmation is needed, for a naira order waiting
+   * for credit, and for a `402` answer.
+   */
+  readonly paymentUrl: string | undefined;
+  /** When an unpaid order fails `insufficient_credit` (nothing is charged). */
+  readonly paymentExpiresAt: string | undefined;
+  /** The order waiting for payment, as the API returned it. */
+  readonly order: unknown;
+  constructor(
+    message: string,
+    init: PantechErrorInit & { paymentUrl?: string; paymentExpiresAt?: string; order?: unknown } = {},
+  ) {
+    super(message, init);
+    this.paymentUrl = init.paymentUrl;
+    this.paymentExpiresAt = init.paymentExpiresAt;
+    this.order = init.order;
+  }
 }
 /** `403`: the key may not do this, e.g. `INSUFFICIENT_SCOPE` or `AI_APPS_DISABLED`. */
 export class PermissionDeniedError extends PantechError {
@@ -79,6 +103,10 @@ export class NotFoundError extends PantechError {
 /** `409`: the resource is in a state that does not allow this, or a name is taken. */
 export class ConflictError extends PantechError {
   override name = "ConflictError";
+}
+/** `412 VERSION_CONFLICT`: the resource changed since you read it. Read it again and retry. */
+export class PreconditionFailedError extends PantechError {
+  override name = "PreconditionFailedError";
 }
 /** `422 VALIDATION_FAILED`: see `errors` for each invalid field. */
 export class ValidationError extends PantechError {
@@ -118,7 +146,10 @@ export class OperationFailedError extends PantechError {
     this.operation = operation;
   }
 }
-/** An instance or database order the SDK waited for ended `failed` or `payment_failed`. */
+/**
+ * An instance, database or domain order the SDK waited for ended `failed`
+ * or `payment_failed`. `code` is the order's `failure_code`.
+ */
 export class OrderFailedError extends PantechError {
   override name = "OrderFailedError";
   /** The failed order. */
@@ -128,7 +159,6 @@ export class OrderFailedError extends PantechError {
     this.order = order;
   }
 }
-/** Waiting for an operation or order took longer than `timeoutMs`. */
 /** A cloud connection's check or a scan ended `failed`. `code` is stable; `detail` says what to do. */
 export class CloudFailedError extends PantechError {
   override name = "CloudFailedError";
@@ -142,6 +172,39 @@ export class CloudFailedError extends PantechError {
     this.resource = resource;
   }
 }
+/**
+ * A DNS zone or record set the SDK waited for ended `failed` (or the zone is
+ * being deleted). `code` is its `failure_code`, e.g. `invalid_change` or
+ * `delegation_timeout`. A failed record change leaves its last good values
+ * answering.
+ */
+export class DNSFailedError extends PantechError {
+  override name = "DNSFailedError";
+  /** `zone` or `record`. */
+  readonly kind: "zone" | "record";
+  /** The zone or record set, as the API returned it. */
+  readonly resource: unknown;
+  constructor(message: string, kind: "zone" | "record", resource: unknown, init: PantechErrorInit = {}) {
+    super(message, init);
+    this.kind = kind;
+    this.resource = resource;
+  }
+}
+/**
+ * A certificate the SDK waited for ended `failed`, `revoked` or `expired`.
+ * `code` is its `failure_code` (e.g. `validation_timeout`, `caa_forbidden`),
+ * or the status when it has none.
+ */
+export class CertificateFailedError extends PantechError {
+  override name = "CertificateFailedError";
+  /** The certificate, as the API returned it. */
+  readonly certificate: unknown;
+  constructor(message: string, certificate: unknown, init: PantechErrorInit = {}) {
+    super(message, init);
+    this.certificate = certificate;
+  }
+}
+/** Waiting for an operation, order or change took longer than `timeoutMs`. */
 export class WaitTimeoutError extends PantechError {
   override name = "WaitTimeoutError";
 }
@@ -150,8 +213,112 @@ export class WebhookVerificationError extends PantechError {
   override name = "WebhookVerificationError";
 }
 
+/**
+ * The problem `code`s Pantech DNS answers with, besides the platform's usual
+ * ones (`VALIDATION_FAILED`, `FORBIDDEN`, `NOT_FOUND`, `IDEMPOTENCY_CONFLICT`,
+ * `INSUFFICIENT_DELETE_SCOPE`, `RATE_LIMITED`…).
+ */
+export const DNS_ERROR_CODES = [
+  "DNS_UNAVAILABLE",
+  "DNS_ZONE_NOT_FOUND",
+  "DNS_RECORD_NOT_FOUND",
+  "DNS_ZONE_LIMIT_REACHED",
+  "DNS_ZONE_CREATE_LIMIT_REACHED",
+  "DNS_RECORD_LIMIT_REACHED",
+  "DNS_ZONE_NAME_TAKEN",
+  "DNS_ZONE_ACTIVE_ELSEWHERE",
+  "DNS_RECORD_EXISTS",
+  "DNS_CNAME_CONFLICT",
+  "DNS_RECORD_READ_ONLY",
+  "DNS_ZONE_SUSPENDED",
+  "DNS_ZONE_NOT_WRITABLE",
+  "DNS_ZONE_IN_USE_BY_DOMAIN",
+  "VERSION_CONFLICT",
+  "TOO_MANY_CHANGES",
+  "INVALID_ZONE_FILE",
+] as const;
+export type DNSErrorCode = (typeof DNS_ERROR_CODES)[number];
+
+/** The problem `code`s of domain registration. */
+export const DOMAIN_ERROR_CODES = [
+  "DOMAINS_UNAVAILABLE",
+  "DOMAIN_NOT_FOUND",
+  "DOMAIN_ORDER_NOT_FOUND",
+  "DOMAIN_LOOKUP_UNAVAILABLE",
+  "TLD_NOT_SOLD",
+  "DOMAIN_NOT_AVAILABLE",
+  "DOMAIN_NOT_TRANSFERABLE",
+  "DOMAIN_ALREADY_HELD",
+  "DOMAIN_ORDER_IN_FLIGHT",
+  "DOMAIN_ORDER_NOT_AWAITING_PAYMENT",
+  "DOMAIN_ORDER_LIMIT_REACHED",
+  "DOMAIN_NOT_CONFIGURABLE",
+  "DOMAIN_LOCKED",
+  "DOMAIN_ZONE_MISMATCH",
+] as const;
+export type DomainErrorCode = (typeof DOMAIN_ERROR_CODES)[number];
+
+/** The problem `code`s of the container registry. */
+export const REGISTRY_ERROR_CODES = [
+  "REGISTRY_UNAVAILABLE",
+  "REGISTRY_NAMESPACE_NOT_SET",
+  "REGISTRY_NAMESPACE_TAKEN",
+  "REGISTRY_NAMESPACE_LOCKED",
+  "INVALID_REGISTRY_NAMESPACE",
+  "INVALID_REPOSITORY_NAME",
+  "REPOSITORY_NOT_FOUND",
+  "TAG_NOT_FOUND",
+  "REGISTRY_TOKEN_NOT_FOUND",
+  "REPOSITORY_EXISTS",
+  "REPOSITORY_LIMIT_REACHED",
+  "REGISTRY_STORAGE_LIMIT_REACHED",
+  "REGISTRY_TOKEN_LIMIT_REACHED",
+  "TAG_IMMUTABLE",
+  "REPOSITORY_SUSPENDED",
+] as const;
+export type RegistryErrorCode = (typeof REGISTRY_ERROR_CODES)[number];
+
+/** The problem `code`s of teams and access policies. */
+export const IAM_ERROR_CODES = [
+  "ACCESS_DENIED",
+  "IAM_TEAM_NOT_FOUND",
+  "IAM_POLICY_NOT_FOUND",
+  "IAM_ATTACHMENT_NOT_FOUND",
+  "IAM_TEAM_NAME_TAKEN",
+  "IAM_POLICY_NAME_TAKEN",
+  "IAM_TEAM_LIMIT_REACHED",
+  "IAM_POLICY_LIMIT_REACHED",
+  "IAM_ATTACHMENT_LIMIT_REACHED",
+  "IAM_MANAGED_POLICY",
+  "IAM_ADMIN_TARGET",
+  "INVALID_POLICY",
+  "VERSION_CONFLICT",
+] as const;
+export type IamErrorCode = (typeof IAM_ERROR_CODES)[number];
+
+/** The problem `code`s of Certificate Manager. */
+export const CERTIFICATE_ERROR_CODES = [
+  "CERTIFICATES_UNAVAILABLE",
+  "CERTIFICATE_NOT_FOUND",
+  "CERTIFICATE_LIMIT_REACHED",
+  "CERTIFICATE_REQUEST_LIMIT_REACHED",
+  "CERTIFICATE_RATE_LIMITED",
+  "CERTIFICATE_IN_USE",
+  "CERTIFICATE_NOT_EXPORTABLE",
+  "CERTIFICATE_NOT_ISSUED",
+  "CERTIFICATE_NOT_REVOCABLE",
+  "CERTIFICATE_NOT_IMPORTED",
+  "CERTIFICATE_NOT_PENDING",
+  "CERTIFICATE_NAMES_MISMATCH",
+  "CONFLICT",
+] as const;
+export type CertificateErrorCode = (typeof CERTIFICATE_ERROR_CODES)[number];
+
 /** True when `err` is a PantechError, and, if `code` is given, carries that code. */
-export function isPantechError(err: unknown, code?: string): err is PantechError {
+export function isPantechError(
+  err: unknown,
+  code?: DNSErrorCode | DomainErrorCode | RegistryErrorCode | IamErrorCode | CertificateErrorCode | (string & {}),
+): err is PantechError {
   return err instanceof PantechError && (code === undefined || err.code === code);
 }
 
@@ -163,6 +330,7 @@ const STATUS_TEXT: Record<number, string> = {
   404: "Not found",
   405: "Method not allowed",
   409: "Conflict",
+  412: "Precondition failed",
   413: "Request too large",
   415: "Unsupported media type",
   422: "Validation failed",
@@ -251,6 +419,8 @@ export function errorFromResponse(
       return new NotFoundError(message, init);
     case status === 409:
       return new ConflictError(message, init);
+    case status === 412:
+      return new PreconditionFailedError(message, init);
     case status === 422:
       return new ValidationError(message, init);
     case status === 429:

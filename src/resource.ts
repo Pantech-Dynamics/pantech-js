@@ -3,6 +3,46 @@ import { type Page, paginate } from "./pagination.js";
 
 type Extra = Pick<APIRequest, "noRetry" | "responseType">;
 
+/** Options for a change that can be made conditional on the version you read. */
+export interface IfMatchOptions extends RequestOptions {
+  /**
+   * The resource's `version` as you read it, sent as `If-Match`. The change
+   * is refused with `412 VERSION_CONFLICT` (PreconditionFailedError) if
+   * someone changed it since.
+   */
+  ifMatch?: number;
+}
+
+/** Response fields that are secrets: a registry token's `secret`, an exported `private_key_pem`. */
+const SECRET_FIELDS = ["secret", "private_key_pem"] as const;
+
+/**
+ * Makes a response's secret fields non-enumerable: `value.secret` still reads
+ * one, but console.log, util.inspect, Object.keys and JSON.stringify leave it
+ * out, so it is not logged by accident. Copy it to your secret store explicitly.
+ */
+export function hideSecrets<T>(value: T): T {
+  if (value && typeof value === "object") {
+    for (const field of SECRET_FIELDS) {
+      if (Object.hasOwn(value, field)) {
+        const secret = (value as Record<string, unknown>)[field];
+        Object.defineProperty(value, field, { value: secret, enumerable: false, writable: false, configurable: true });
+      }
+    }
+  }
+  return value;
+}
+
+/** Moves `ifMatch` into an `If-Match` header. */
+export function withIfMatch(options: IfMatchOptions | undefined): RequestOptions | undefined {
+  if (options?.ifMatch === undefined) return options;
+  const { ifMatch, ...rest } = options;
+  if (!Number.isInteger(ifMatch) || ifMatch < 0) {
+    throw new TypeError("ifMatch must be the version you read: a whole number, 0 or more.");
+  }
+  return { ...rest, headers: { ...rest.headers, "If-Match": String(ifMatch) } };
+}
+
 /** The base of every resource: a thin, typed layer over Pantech.request. */
 export abstract class APIResource {
   protected readonly _client: Pantech;

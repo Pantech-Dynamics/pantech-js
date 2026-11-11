@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!dist", "!coverage", "!spec", "!**/*.md"]
+    "includes": ["**", "!dist", "!coverage", "!spec", "!**/*.md"],
+    "maxSize": 4194304
   },
   "formatter": {
     "enabled": true,
