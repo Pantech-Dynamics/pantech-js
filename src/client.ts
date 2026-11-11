@@ -13,7 +13,11 @@ import {
   Pricing,
   Regions,
 } from "./resources/catalog.js";
+import { Certificates } from "./resources/certificates.js";
 import { DatabaseOrders, Databases } from "./resources/databases.js";
+import { DNS } from "./resources/dns.js";
+import { Domains } from "./resources/domains.js";
+import { IAM } from "./resources/iam.js";
 import { InstanceOrders, Instances } from "./resources/instances.js";
 import { Kubernetes } from "./resources/kubernetes.js";
 import { LoadBalancers } from "./resources/load-balancers.js";
@@ -22,6 +26,7 @@ import { Migrate } from "./resources/migrate.js";
 import { Networks } from "./resources/networks.js";
 import { Operations } from "./resources/operations.js";
 import { PublicIps } from "./resources/public-ips.js";
+import { Registry } from "./resources/registry.js";
 import { SecurityGroups } from "./resources/security-groups.js";
 import { Snapshots } from "./resources/snapshots.js";
 import { SshKeys } from "./resources/ssh-keys.js";
@@ -92,11 +97,18 @@ export interface APIRequest {
    * `429` is still retried: it is refused before anything runs.
    */
   noRetry?: boolean;
-  /** How to read a successful response. Default `json`. */
-  responseType?: "json" | "arrayBuffer" | "response";
+  /** How to read a successful response. Default `json`; `text` for a zone file. */
+  responseType?: "json" | "arrayBuffer" | "text" | "response";
 }
 
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+const ACCEPT: Record<NonNullable<APIRequest["responseType"]>, string> = {
+  json: "application/json",
+  arrayBuffer: "*/*",
+  text: "text/dns, text/plain;q=0.9",
+  response: "application/json",
+};
 
 /** The Pantech Dynamics public API client. */
 export class Pantech {
@@ -139,6 +151,16 @@ export class Pantech {
   readonly webhooks: Webhooks;
   /** Move from another cloud: connections, scans and migration plans. */
   readonly migrate: Migrate;
+  /** Pantech DNS: hosted zones and their records, on Pantech's own name servers. */
+  readonly dns: DNS;
+  /** Domains: search, register, transfer in, renew and configure. */
+  readonly domains: Domains;
+  /** The private container registry: namespace, repositories, tags and registry tokens. */
+  readonly registry: Registry;
+  /** Teams and access policies: who may do what, on which resources. */
+  readonly iam: IAM;
+  /** TLS certificates Pantech issues and renews, or ones you import. */
+  readonly certificates: Certificates;
   readonly operations: Operations;
 
   constructor(options: ClientOptions = {}) {
@@ -184,6 +206,11 @@ export class Pantech {
     this.sshKeys = new SshKeys(this);
     this.webhooks = new Webhooks(this);
     this.migrate = new Migrate(this);
+    this.dns = new DNS(this);
+    this.domains = new Domains(this);
+    this.registry = new Registry(this);
+    this.iam = new IAM(this);
+    this.certificates = new Certificates(this);
   }
 
   /**
@@ -196,7 +223,7 @@ export class Pantech {
     const isWrite = req.method !== "GET";
     const headers: Record<string, string> = {
       ...this.#headers,
-      Accept: req.responseType === "arrayBuffer" ? "*/*" : "application/json",
+      Accept: ACCEPT[req.responseType ?? "json"],
       ...options.headers,
       Authorization: `Bearer ${this.#apiKey}`,
     };
@@ -278,6 +305,7 @@ function queryString(query: object | undefined): string {
 async function readBody(res: Response, type: APIRequest["responseType"]): Promise<unknown> {
   if (type === "response") return res;
   if (type === "arrayBuffer") return res.arrayBuffer();
+  if (type === "text") return res.text();
   const text = await res.text();
   if (res.status === 204 || text === "") return undefined;
   try {

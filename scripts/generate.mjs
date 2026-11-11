@@ -2,10 +2,12 @@
 //   src/types.gen.ts   paths, components and operations (openapi-typescript)
 //   src/models.gen.ts  one named alias per schema, e.g. `Instance`
 // Operations in scripts/not-in-sdk.json, and the schemas only they use, are
-// left out: the SDK has no methods for them yet.
+// left out: the SDK has no methods for them yet. Files in spec/pending/ add
+// endpoints the API serves before the published spec describes them, only
+// where the spec lacks them.
 // Run with `npm run generate`; commit both files.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse, stringify } from "yaml";
@@ -15,7 +17,42 @@ const bin = process.platform === "win32" ? "npx.cmd" : "npx";
 const methods = ["get", "post", "put", "patch", "delete"];
 
 const doc = parse(readFileSync(spec, "utf8"));
+// spec/pending/ is absent (git keeps no empty folder) while nothing is pending.
+const pendingFiles = existsSync("spec/pending") ? readdirSync("spec/pending") : [];
+for (const file of pendingFiles.filter((f) => f.endsWith(".yaml")).sort()) {
+  mergePending(doc, parse(readFileSync(join("spec/pending", file), "utf8")));
+}
 const skip = new Set(Object.keys(JSON.parse(readFileSync("scripts/not-in-sdk.json", "utf8"))));
+
+/**
+ * Adds a pending file's operations and components wherever the spec has none
+ * by that name. A file with `x-pending-replace-until: <JSON pointer>` instead
+ * replaces them, as long as the pointer is not in the spec: for an endpoint
+ * the vendored spec has without fields the API has added since.
+ */
+function mergePending(target, pending) {
+  const until = pending["x-pending-replace-until"];
+  if (until !== undefined && hasPointer(target, until)) return;
+  const put = until === undefined ? (obj, key, value) => (obj[key] ??= value) : (obj, key, value) => (obj[key] = value);
+  for (const [route, item] of Object.entries(pending.paths ?? {})) {
+    target.paths[route] ??= {};
+    for (const [key, value] of Object.entries(item)) put(target.paths[route], key, value);
+  }
+  target.components ??= {};
+  for (const [section, entries] of Object.entries(pending.components ?? {})) {
+    target.components[section] ??= {};
+    for (const [name, value] of Object.entries(entries)) put(target.components[section], name, value);
+  }
+}
+
+function hasPointer(doc, pointer) {
+  let node = doc;
+  for (const part of pointer.replace(/^#\//, "").split("/")) {
+    if (node === null || typeof node !== "object" || !(part in node)) return false;
+    node = node[part];
+  }
+  return true;
+}
 
 /** The component schemas `value` refers to, directly or through other schemas. */
 function reachable(roots) {

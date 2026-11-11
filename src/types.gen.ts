@@ -594,6 +594,602 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/dns/zones": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List DNS zones
+     * @description Your organization's hosted zones, newest first. Served from Pantech's own records: listing never waits on the DNS network.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDNSZones"];
+    put?: never;
+    /**
+     * Create a DNS zone
+     * @description Hosts a zone for a domain you own (or a subdomain of one) on Pantech DNS, Pantech's own name servers. The zone starts `pending`, gets its own pair of name servers within seconds and moves to `awaiting_delegation`: set exactly those two `name_servers` at your domain's registrar. Records you add meanwhile stay `pending` and are served once the zone is `active`. Pantech checks the delegation from the parent zone's own servers; the zone becomes `active` when it matches, and is removed (`failed`, `delegation_timeout`) if it never does within 14 days. A zone for a domain registered through Pantech is delegated for you.
+     *
+     *     Names are lower-cased and an internationalised name is stored in punycode (`café.example` becomes `xn--caf-dma.example`). At most 25 zones per organization, and 10 creates in 24 hours. The first 5 live zones are free; each further zone is billed by the hour on your monthly invoice (see `GET /dns/zones/quote` for the price in your currency). Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the zone the first request made. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createDNSZone"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/quote": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Price DNS zones
+     * @description What hosted zones cost your organization. The first `free_zones` (5) live zones are free; each further zone costs `monthly_per_zone_minor` a month in your organization's currency, billed by the hour on your monthly invoice ("DNS zones beyond 5 free"). A zone is live from when Pantech DNS creates it (`awaiting_delegation`) until it is deleted; a `pending`, `failed` or `deleted` zone is not counted. `monthly_estimate_minor` is what your zones beyond the free ones cost over a 730-hour month at today's price.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["quoteDNSZones"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a DNS zone
+     * @description One zone: its status, the name servers to delegate to, and when its delegation was last checked.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDNSZone"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a DNS zone
+     * @description Deletes the zone and every record in it from the DNS network straight away: its names stop answering within about a minute. The zone answers `deleting`, then `deleted`. A zone a Pantech domain delegates to cannot be deleted until the domain points elsewhere. Owners and admins only.
+     *
+     *     **Idempotency:** deleting a zone that is already being deleted returns it again.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteDNSZone"];
+    options?: never;
+    head?: never;
+    /**
+     * Change a DNS zone
+     * @description Changes the zone's description. A zone's name never changes: create another zone instead. Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the zone the same.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateDNSZone"];
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export a zone file
+     * @description The zone as a BIND zone file (RFC 1035 master file format), with absolute names, one line per value, sorted by name and type. Record sets being deleted are left out. Downloaded as `<zone>.zone`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["exportDNSZone"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/import": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import a zone file
+     * @description Reads a BIND zone file of up to 2 MiB and makes the zone match it: a name and type in the file that the zone has is updated when its TTL or values differ, one it does not have is created. `$ORIGIN`, `$TTL`, comments, relative names, `@`, omitted names and parenthesised records are understood; `$INCLUDE` and `$GENERATE` are not. The file's `SOA` and apex `NS` are ignored: Pantech manages them. With `replace: true`, record sets not in the file are deleted too, which needs, from an AI app's key, the `delete` scope.
+     *
+     *     At most 1,000 changes, applied all or nothing like a batch. Owners and admins only.
+     *
+     *     **Idempotency:** importing the same file again changes nothing and returns an empty list.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["importDNSZone"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/records": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a zone's records
+     * @description The zone's record sets, by name then type, including the apex `SOA` and `NS` that Pantech manages (`managed: true`, read-only). A record set is one name and type with its TTL and every value.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDNSRecords"];
+    put?: never;
+    /**
+     * Create a record set
+     * @description Adds a record set: one name and type, a TTL, and 1 to 100 values. It answers `pending` and is live on the DNS network, `active`, typically within a minute.
+     *
+     *     Values by type: `A` `203.0.113.10`; `AAAA` `2001:db8::1`; `CNAME`, `NS` and `PTR` a host name; `MX` `10 mail.example.com`; `SRV` `10 5 5060 sip.example.com`; `CAA` `0 issue "ca.example.net"`; `TXT` any printable text up to 4,000 bytes, split into 255-byte strings for you (quoted strings are accepted too). Host names are returned with a trailing dot. Private and carrier-grade NAT addresses are refused unless `allow_private` is true. A `CNAME` stands alone at its name and is never at the apex; `NS` delegates a subdomain only. At most 10,000 record sets per zone. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the record set the first request made, as it is now. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`. A key is remembered for 24 hours.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createDNSRecord"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/records/batch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change many record sets at once
+     * @description Applies up to 1,000 creates, updates and deletes in one request, all or nothing: every change is checked against the zone as the earlier changes leave it, and if any is refused, nothing changes and the error names it (`changes[i]…`). They reach the DNS network together, as one change.
+     *
+     *     `create` takes `record`. `update` takes `record_id` and `record`, whose TTL, values, `allow_private` and comment replace the record set's (its name and type may be left out, and must match if sent). `delete` takes `record_id`. `version`, when sent, must be the record's current version. A batch with a delete needs, from an AI app's key, the `delete` scope too. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the record sets the first request changed, as they are now (a record set since deleted and removed is left out). The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`. A key is remembered for 24 hours.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["batchDNSRecords"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/records/{record_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a record set
+     * @description One record set. `status` is `pending` until its latest change is live, then `active`; `failed` carries a `failure_code`, and the DNS network keeps answering the last values that applied.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDNSRecord"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a record set
+     * @description Removes the record set from the DNS network. It answers `deleting` and disappears once the DNS network no longer holds it, typically within a minute. Send `If-Match: <version>` to refuse the delete if the record changed since you read it. Owners and admins only.
+     *
+     *     **Idempotency:** deleting a record set that is already being deleted returns it again.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteDNSRecord"];
+    options?: never;
+    head?: never;
+    /**
+     * Change a record set
+     * @description Changes the TTL, values, `allow_private` or comment; fields you leave out keep their value, and `values` replaces every value. A record set's name and type never change: delete it and create another. Send `If-Match: <version>` to refuse the change if someone else changed the record since you read it. Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the record the same.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateDNSRecord"];
+    trace?: never;
+  };
+  "/public/v1/dns/zones/{zone_id}/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check a zone's delegation now
+     * @description Asks Pantech to check the zone's delegation within seconds instead of on its schedule: call it after changing the name servers at your registrar, then get the zone to see whether it became `active`. Has no effect on a zone that is not `awaiting_delegation` or `active`. Owners and admins only.
+     *
+     *     **Idempotency:** asking twice checks once.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["verifyDNSZone"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domain-orders/{order_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a domain order
+     * @description One order: what it bought, what it cost and how far it got. Poll it after registering, transferring or renewing.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDomainOrder"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domain-orders/{order_id}/retry-payment": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retry a domain order's payment
+     * @description An order your credit did not cover waits for its payment (`status: awaiting_payment`) for an hour. In US dollars, Pantech charges your saved card the difference; in naira, you add credit and the order is paid from it. Retry makes the order try again now and wait another hour: it charges your saved card once more (after a decline, or once you have saved a new card), or takes credit you have just added. Nothing is charged by this call itself, and the order is never charged twice. Poll the order to see it move on.
+     *
+     *     Authorized as the order's own kind (`domains:Register`, `domains:Transfer` or `domains:Renew`) on its domain.
+     *
+     *     **Idempotency:** retrying is always safe: a repeated call (with or without the same `Idempotency-Key`) only makes the order due again; it never charges twice.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["retryDomainOrderPayment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List domains
+     * @description The domains Pantech holds for your organization, by name. The registrant contact is never part of a domain.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDomains"];
+    put?: never;
+    /**
+     * Register a domain
+     * @description Places a paid order to register a domain. The price is fixed now (`order.amount_minor`); it is taken from your organization's credit before the registry is asked, and a failed order returns it (`refunded: true`). Without enough credit the order becomes `awaiting_payment` within seconds and waits an hour: in US dollars your saved card is charged the difference (a `payment_url` appears only if your bank asks you to confirm the payment); in naira, add credit and the order is paid from it. `POST /domain-orders/{order_id}/retry-payment` tries again at once. Unpaid after the hour it fails with `insufficient_credit` and nothing is charged. Follow the order at `GET /domain-orders/{order_id}`: it goes `pending` → `paid` → `submitted` → `succeeded` | `failed`, and the domain becomes `active`, with a Pantech zone it is delegated to.
+     *
+     *     Privacy protection and the transfer lock are on by default. The registry emails the registrant to verify their address; an unverified registrant is suspended after 15 days. At most 20 orders a day per organization. Owners and admins only.
+     *
+     *     **`.ng` domains:** For `.ng` and its second levels (`com.ng`, `org.ng`, `net.ng`, `name.ng`, `mobi.ng`, `i.ng`): `state` and `postal_code` are required, a `name.ng` registrant must be `type: person`, and privacy is always on (`privacy: false` is `422 VALIDATION_FAILED` on `privacy`, code `PRIVACY_ALWAYS_ON`). A contact that breaks these rules is `422 VALIDATION_FAILED` on `contact.state`, `contact.postal_code` or `contact.type`, before anything is charged.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the original domain and order. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["registerDomain"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search for a domain
+     * @description Checks a name across the featured TLDs (or exactly, when it ends in a TLD Pantech sells), plus suggestions, each with its price, in one call. Availability is live. Premium and reserved names are shown `unavailable`: Pantech does not sell them yet. `unknown` means the name could not be checked: try again. At most 60 searches a minute per organization.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["searchDomains"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/tlds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List TLDs on sale
+     * @description Every TLD Pantech sells to your organization, priced per year in its currency. Registering for `n` years costs `register_minor + renew_minor × (n-1)`; renewing for `n` years costs `renew_minor × n`; a transfer costs `transfer_minor + renew_minor × (n-1)` (a transfer adds one year). `featured` TLDs are the ones search tries for a bare name.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDomainTLDs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/transfer-check": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check a domain can be transferred in
+     * @description Whether a domain held at another registrar can be transferred to Pantech now, and what it costs. `reason` is a stable code when it cannot (for example a transfer lock at the current registrar).
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["checkDomainTransfer"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/transfers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Transfer a domain in
+     * @description Places a paid order to move a domain from another registrar to Pantech, with the `auth_code` that registrar gives you. A transfer adds one year to the registration. It is paid from credit as a registration is, and can take several days while the current registrar confirms it. The auth code is kept sealed until the transfer finishes, then deleted. Owners and admins only.
+     *
+     *     **`.ng` domains:** For `.ng` and its second levels (`com.ng`, `org.ng`, `net.ng`, `name.ng`, `mobi.ng`, `i.ng`): `state` and `postal_code` are required, a `name.ng` registrant must be `type: person`, and privacy is always on (`privacy: false` is `422 VALIDATION_FAILED` on `privacy`, code `PRIVACY_ALWAYS_ON`). A contact that breaks these rules is `422 VALIDATION_FAILED` on `contact.state`, `contact.postal_code` or `contact.type`, before anything is charged.
+     *
+     *     **Idempotency:** as *Register a domain*.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["transferDomain"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a domain
+     * @description One domain: its status, expiry, settings and name servers. `settings_pending` is true while a lock, privacy, name server or contact change is being applied at the registry.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDomain"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Change a domain's settings
+     * @description Turns auto-renew, the transfer lock and privacy protection on or off; fields you leave out keep their value. With auto-renew on, Pantech renews for one year 30 days before expiry, paid from credit. Lock and privacy changes are applied at the registry within minutes (`settings_pending`). Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the domain the same.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateDomain"];
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}/auth-code": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a domain's auth code
+     * @description The fetched auth code and when it stops being shown, or `202 {"status": "pending"}` while it is still being fetched. It can take the domain away from Pantech, so it needs, from an AI app's key, the `delete` scope, and the answer is never cached.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    get: operations["getDomainAuthCode"];
+    put?: never;
+    /**
+     * Ask for a domain's auth code
+     * @description Starts fetching the auth code another registrar needs to take the domain from Pantech. Turn the transfer lock off first. Get the code with *Get a domain's auth code* once `auth_code_pending` clears, usually within a minute. Owners and admins only; recorded in the audit log.
+     *
+     *     **Idempotency:** asking twice fetches one code.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    post: operations["requestDomainAuthCode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}/contact": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a domain's registrant contact
+     * @description The registrant contact. It is personal data: only owners and admins may read it, so this GET needs the `write` scope, and the answer is never cached.
+     *
+     *     **Scope:** `write`.
+     */
+    get: operations["getDomainContact"];
+    /**
+     * Change a domain's registrant contact
+     * @description Replaces the registrant contact (also used as the admin and technical contact). Applied at the registry within minutes; the registry may email the registrant to verify the address again. Owners and admins only.
+     *
+     *     **`.ng` domains:** For `.ng` and its second levels (`com.ng`, `org.ng`, `net.ng`, `name.ng`, `mobi.ng`, `i.ng`): `state` and `postal_code` are required, and a `name.ng` registrant must be `type: person` (otherwise `422 VALIDATION_FAILED` on `contact.state`, `contact.postal_code` or `contact.type`). Privacy is always on for these domains.
+     *
+     *     **Idempotency:** the same request applied twice leaves the contact the same.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["updateDomainContact"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}/name-servers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set a domain's name servers
+     * @description Points the domain at a Pantech zone (`use_pantech_dns: true`, with `zone_id` or, without it, your zone with the domain's name) or at 2 to 6 name servers of your own. Applied at the registry within minutes. Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the domain the same.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["setDomainNameServers"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}/orders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a domain's orders
+     * @description The domain's registration, transfer and renewal orders, newest first (the latest 50).
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDomainOrders"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/domains/{domain_id}/renew": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Renew a domain
+     * @description Places a paid order to renew the domain for `years` (default 1): `renew_minor × years`, taken from credit before the registry is asked. A registration may not run more than 10 years ahead. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the original order.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["renewDomain"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/firewall-rules/{rule_id}": {
     parameters: {
       query?: never;
@@ -1511,6 +2107,8 @@ export interface paths {
      * Create a load balancer
      * @description Spreads one TCP port of a `load_balancer` public IP across instances in one subnet of that IP's private network (VPC). The public IP must be active and have `purpose` `load_balancer`; one public IP can carry several load balancers, one per public port. `private_port` defaults to `public_port`, and `algorithm` to `roundrobin`. `cidr_list` limits which source addresses may connect (default: anywhere). The subnet's firewall rules must allow the port.
      *
+     *     **HTTPS.** An `appliance` load balancer can end TLS itself: send `protocol` `https` with the `certificate_id` of an issued certificate from `/public/v1/certificates` (requested or imported). The load balancer serves that certificate with HTTP/2 and HTTP/1.1, speaks plain HTTP to your instances on `private_port` (default `80`), and adds `X-Forwarded-For`, `X-Forwarded-Proto: https` and `X-Forwarded-Port`. `tls_policy` is `modern` (TLS 1.2 and 1.3, forward-secret AEAD ciphers only; the default) or `tls13` (TLS 1.3 only). `redirect_http: true` also answers port 80 with a `301` to HTTPS. When the certificate renews, or you reimport it, the load balancer starts serving the new one within minutes, without dropping connections. While a load balancer uses a certificate, the certificate cannot be deleted or revoked. A `vpc_native` load balancer passes TLS through as `tcp` only.
+     *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`; a failed operation carries a stable `failure.code` and a readable `failure.reason`.
      *
      *     Send an `Idempotency-Key`. A retry with the same key returns the original operation instead of making the change twice. The load balancer's id is the operation's `resource_id`.
@@ -1555,7 +2153,7 @@ export interface paths {
     head?: never;
     /**
      * Change a load balancer
-     * @description Renames it, changes its `algorithm`, or replaces its targets: `instance_ids`, when sent (even empty), is the whole new set. Fields you leave out stay as they are. The ports, the public IP, the subnet and `cidr_list` cannot change: create a new load balancer for those. A change that changes nothing returns an empty `operation_id`.
+     * @description Renames it, changes its `algorithm`, or replaces its targets: `instance_ids`, when sent (even empty), is the whole new set. Fields you leave out stay as they are. On an `https` listener you can also switch to another certificate (`certificate_id`), change `tls_policy` or turn `redirect_http` on or off; the load balancer reloads without dropping connections. The protocol, the ports, the public IP, the subnet and `cidr_list` cannot change: create a new load balancer for those. A change that changes nothing returns an empty `operation_id`.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`; a failed operation carries a stable `failure.code` and a readable `failure.reason`.
      *
@@ -1961,11 +2559,11 @@ export interface paths {
     put?: never;
     /**
      * Change the cluster's node plan
-     * @description Moves the cluster's control node and default workers to another node plan, one node at a time. Each worker is drained (its pods are moved to the other nodes, within their disruption budgets), stopped, given the new size and a larger disk, and started again, and the next node waits until it has rejoined the cluster. The control node goes last; the Kubernetes API is unavailable for the minutes it restarts, while workloads keep running. A cluster with one worker has no other node to move its pods to while that worker restarts.
+     * @description Moves the cluster's control node and default workers to another node plan, one node at a time. Each worker is drained (its pods are moved to the other nodes, within their disruption budgets), stopped, given the new size (and a larger disk, if the plan's is larger), and started again, and the next node waits until it has rejoined the cluster. The control node goes last; the Kubernetes API is unavailable for the minutes it restarts, while workloads keep running. A cluster with one worker has no other node to move its pods to while that worker restarts.
      *
      *     The cluster keeps its current plan, and is billed at it, until every node runs the new one. If the change cannot finish (for example, there is no room for the larger nodes), the nodes are moved back to the plan the cluster had and the operation fails with `KUBERNETES_NODE_RESIZE_FAILED`.
      *
-     *     A node's disk can only grow: a plan with a smaller disk than the nodes have is refused with `409 KUBERNETES_NODE_DISK_CANNOT_SHRINK`. Sending the plan the cluster already runs changes nothing. Node pools keep their own plans.
+     *     A node's disk can only grow, so moving to a plan with a smaller disk changes the nodes' vCPU and memory and they keep the disk they have; `node.disk_gb` shows it. Sending the plan the cluster already runs changes nothing. Node pools keep their own plans.
      *
      *     Returns `202 Accepted` with an `operation_id` (also in the `Location` header). The change happens in the background: poll `GET /public/v1/operations/{operation_id}`, or stream `/events`, until `status` is `succeeded` or `failed`.
      *
@@ -3398,10 +3996,1002 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/iam/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List actions
+     * @description Every action a statement can name, with what it is on and whether it only reads. Any member.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamActions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the access setting
+     * @description The organization's `member_baseline`. Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getIamSettings"];
+    /**
+     * Change the access setting
+     * @description Sets `member_baseline`: `read` lets every member read everything (today's behaviour), `none` lets members do only what their policies allow. Owners only; owners are emailed a security notice when it changes.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["updateIamSettings"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/teams": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List teams
+     * @description The organization's teams, oldest first. Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamTeams"];
+    put?: never;
+    /**
+     * Create a team
+     * @description At most 50 teams per organization. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`. A retry with the same key and request returns what the first request made, with the same status; the same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createIamTeam"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/teams/{team_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a team
+     * @description Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getIamTeam"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a team
+     * @description Removes the team, its memberships and its policy attachments. Only owners may delete a team that contains an admin. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Destructive:** an AI app's key also needs the `delete` scope.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["deleteIamTeam"];
+    options?: never;
+    head?: never;
+    /**
+     * Rename a team
+     * @description Changes the name or description; fields left out keep their value. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateIamTeam"];
+    trace?: never;
+  };
+  "/public/v1/iam/teams/{team_id}/members": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a team's members
+     * @description Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamTeamMembers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/teams/{team_id}/members/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Add a member to a team
+     * @description Takes no body. Adding someone already in the team answers them unchanged. Admins may add and remove members only, never an admin or owner.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`. Repeating it is safe: it answers the existing membership or attachment.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["addIamTeamMember"];
+    post?: never;
+    /**
+     * Remove a member from a team
+     * @description Admins may remove members only.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["removeIamTeamMember"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/members": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List members
+     * @description The organization's active members with their teams and how many policies apply to each, by when they joined. Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamMembers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/members/{user_id}/effective-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a member's effective access
+     * @description The member's role, teams and every policy that applies to them, with the team that brought each. Owners and admins, and members with `iam:Read`. Any member may read their own.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getIamEffectiveAccess"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/simulate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Simulate an access decision
+     * @description Would this member be allowed this action on this resource? Changes nothing, so it needs only the `read` scope; an `Idempotency-Key`, if sent, is ignored. The answer may name the deciding policy. Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    post: operations["simulateIamAccess"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/policies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List policies
+     * @description Pantech's managed policies, then the organization's, oldest first. Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamPolicies"];
+    put?: never;
+    /**
+     * Create a policy
+     * @description 1 to 20 statements; at most 100 policies per organization. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`. A retry with the same key and request returns what the first request made, with the same status; the same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createIamPolicy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/policies/{policy_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a policy
+     * @description Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getIamPolicy"];
+    /**
+     * Replace a policy
+     * @description Replaces the name, description and statements. Pantech's policies cannot be changed. Only owners may change a policy that applies to an admin. Owners are emailed when the change gives a member a write action they did not have. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["updateIamPolicy"];
+    post?: never;
+    /**
+     * Delete a policy
+     * @description Deletes the policy and detaches it everywhere. Pantech's policies cannot be deleted. Only owners may delete a policy that applies to an admin. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Destructive:** an AI app's key also needs the `delete` scope.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["deleteIamPolicy"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/policies/{policy_id}/attachments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a policy's attachments
+     * @description Owners and admins, and members with `iam:Read`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listIamPolicyAttachments"];
+    put?: never;
+    /**
+     * Attach a policy
+     * @description Attaches the policy to a member or a team: `201` with the new attachment, or `200` with the existing one when it is already attached. At most 10 policies per member and per team. Only owners may attach to an admin or a team containing an admin. Owners are emailed when it gives a member write access. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`. Repeating it is safe: it answers the existing membership or attachment.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["attachIamPolicy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/iam/policies/{policy_id}/attachments/{principal_type}/{principal_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Detach a policy
+     * @description Only owners may detach from an admin or a team containing an admin. Owners and admins. A key with a key policy cannot change IAM.
+     *
+     *     **Idempotency:** requires an `Idempotency-Key`.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["detachIamPolicy"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the registry namespace
+     * @description Your organization's namespace on the private container registry, its limits and its storage. Images are `registry.pantechdynamics.com/<namespace>/<repository>:<tag>`; sign in with `docker login registry.pantechdynamics.com -u pantech -p <API key or registry token>`.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getRegistryNamespace"];
+    /**
+     * Claim or change the registry namespace
+     * @description Claims your organization's namespace, or changes it. A namespace is 3 to 30 lower-case letters, digits and single hyphens, starts with a letter, and is unique across Pantech; some names, such as `library` and `pantech`, are reserved. The name cannot change once a repository was ever created in it, even after every repository is deleted, and a name that held content is never given to another organization. `create_on_push` (on by default) lets a push to a repository that does not exist yet create it. Owners and admins only.
+     *
+     *     **Idempotency:** the same body again changes nothing.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["setRegistryNamespace"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry/repositories": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List repositories
+     * @description Your organization's repositories, by name. Served from Pantech's own records: listing never waits on the registry.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listRegistryRepositories"];
+    put?: never;
+    /**
+     * Create a repository
+     * @description Creates a repository in your namespace. `name` follows the OCI name grammar: lower-case path components of letters and digits, separated by `.`, `_`, `__` or `-`, joined by `/`, at most 255 characters with the namespace. Repositories are `private` unless `visibility` is `public` (anyone may pull, without signing in). With `immutable_tags`, a tag once pushed cannot be moved or deleted: a push that moves one is put back. `retention` keeps the newest `keep_last` tags and deletes untagged images older than `untagged_after_days`; tags matching `keep_pattern` are never removed. A push can also create a repository (see `create_on_push`). At most 100 repositories per organization. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the repository the first request made. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createRegistryRepository"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry/repositories/{repository_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a repository
+     * @description One repository, its settings, tag count and storage.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getRegistryRepository"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a repository
+     * @description Deletes the repository and every image in it. It answers `deleting` and disappears once every image is deleted from the registry, usually within a minute; the space is reclaimed by the next nightly clean-up. Owners and admins only.
+     *
+     *     **Idempotency:** deleting a repository that is already being deleted returns it again.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteRegistryRepository"];
+    options?: never;
+    head?: never;
+    /**
+     * Change a repository
+     * @description Changes a repository's description, visibility, tag immutability or retention policy. Fields left out keep their value. `retention`, when present, replaces the whole policy: a rule left out of it, or null, is removed, and `"retention": null` removes every rule. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateRegistryRepository"];
+    trace?: never;
+  };
+  "/public/v1/registry/repositories/{repository_id}/tags": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a repository's tags
+     * @description The repository's tags, newest push first, each with the image it points at: digest, media type, size and platforms.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listRegistryTags"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry/repositories/{repository_id}/tags/{tag}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a tag
+     * @description One tag and the image it points at.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getRegistryTag"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a tag
+     * @description Removes the tag from the registry. The image stays while another tag points at it; untagged images are removed by the nightly clean-up. Refused for a repository with immutable tags. Owners and admins only.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteRegistryTag"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry/tokens": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List registry tokens
+     * @description Your organization's registry tokens, newest first, revoked ones included. Secrets are never shown again after creation.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listRegistryTokens"];
+    put?: never;
+    /**
+     * Create a registry token
+     * @description Creates a credential for CI systems and clusters that works only for the registry, never for the Pantech API. `permission` is `pull` or `push` (push includes pull); `repositories` limits it to some repositories of your namespace (empty for all of them); `expires_at` is optional. The answer alone carries `secret`, `prt_…`: use it as the password of `docker login registry.pantechdynamics.com -u pantech`. It is shown once. Owners and admins are emailed about every new token. At most 50 active tokens per organization. Owners and admins only.
+     *
+     *     A token never carries more than the member creating it may do: a `pull` token needs `registry:Pull`, a `push` token `registry:Pull` and `registry:Push`, on every repository it lists, or, with `repositories` empty, on every repository at once (no deny of the action may apply to any repository). These are decided as the token will be used, without MFA and from any address. Every use is decided again, and a token stops for good when the member who created it leaves the organization.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the token the first request made with `secret` null, since the secret is never stored. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createRegistryToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/registry/tokens/{token_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke a registry token
+     * @description Revokes the token: it can no longer sign in, and registry sessions it opened end within 5 minutes. Owners and admins only.
+     *
+     *     **Idempotency:** revoking a revoked token succeeds again.
+     *
+     *     **Scope:** `write`. Destructive: an AI app's key also needs `delete`.
+     */
+    delete: operations["deleteRegistryToken"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List certificates
+     * @description Your organization's TLS certificates, newest first: those Pantech issued and those you imported. Never includes a private key.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listCertificates"];
+    put?: never;
+    /**
+     * Request a certificate
+     * @description Asks for a free TLS certificate from a publicly trusted certificate authority for 1 to 100 names, wildcards (`*.example.com`) included. Pantech proves control of each name with a DNS challenge and renews the certificate by itself 30 days before it expires.
+     *
+     *     For a name in an active Pantech DNS zone of your organization, Pantech writes the challenge records itself: nothing to do. For any other name the answer's `validations` show one CNAME to add once at your DNS host (`cname_name` → `cname_target`); it keeps every renewal automatic for as long as it stays. The request fails `validation_timeout` if those CNAMEs are not in place within 72 hours.
+     *
+     *     The certificate answers `pending_validation` at once and becomes `issued` usually within two minutes of its records being in place. Names are published in public Certificate Transparency logs by every authority: do not request names you want to keep private. At most 100 certificates per organization, 20 requests and imports in 24 hours, and 5 requests for exactly the same names in 7 days. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` returns the certificate the first request made. The same key with a different request returns `409 IDEMPOTENCY_CONFLICT`.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["requestCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates/import": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import a certificate
+     * @description Stores a certificate you bought elsewhere, with its intermediates and its unencrypted private key (PKCS #8, PKCS #1 or SEC 1 PEM), so Pantech services can use it. It must be valid now, use an RSA key of 2048, 3072 or 4096 bits or an ECDSA P-256 or P-384 key, be an end-entity (not a CA) certificate, name 1 to 100 DNS names, and the key must match it; each intermediate must sign the certificate before it. At most 64 KiB in all. The key is encrypted at rest and never shown again unless you import with `exportable: true` and export it.
+     *
+     *     Pantech never renews an imported certificate: you are reminded 30, 7 and 1 days before it expires, and you replace it with `reimport`. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` and the same certificate returns the original import.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["importCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates/{certificate_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a certificate
+     * @description One certificate: its names, status, how each name is validated (and the CNAME to add when needed), its validity and renewal, and what uses it. Never includes the private key.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getCertificate"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete a certificate
+     * @description Removes the certificate and its private key from Pantech at once; any validation records still published are removed within a minute. It does not revoke it: revoke first if the key may be compromised. Refused while a Pantech service uses it. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` answers the original result.
+     *
+     *     **Scope:** `delete`.
+     */
+    delete: operations["deleteCertificate"];
+    options?: never;
+    head?: never;
+    /**
+     * Change a certificate
+     * @description Changes the certificate's description. Names, key type and `exportable` never change: request another certificate instead. Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the certificate the same.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateCertificate"];
+    trace?: never;
+  };
+  "/public/v1/certificates/{certificate_id}/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check a certificate's CNAMEs now
+     * @description Checks the `_acme-challenge` CNAMEs of a certificate waiting for them within seconds, instead of on the next five-minute check. Call it after adding them. Owners and admins only.
+     *
+     *     **Idempotency:** calling it twice is the same as once.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["verifyCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates/{certificate_id}/reimport": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replace an imported certificate
+     * @description Replaces an imported certificate with a new one for exactly the same names, in place, so everything using it keeps working. The same checks as an import apply. Owners and admins only.
+     *
+     *     **Idempotency:** the same request applied twice leaves the certificate the same.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["reimportCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates/{certificate_id}/export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Export a certificate and its private key
+     * @description Returns the certificate, its intermediates and its private key as PEM, for a certificate created with `exportable: true`. This hands out a secret that can impersonate your site: every export is recorded, and every owner and admin is emailed a security notice. Owners and admins only.
+     *
+     *     **Idempotency:** each call returns the current certificate and key; nothing changes.
+     *
+     *     **Scope:** `delete`.
+     */
+    post: operations["exportCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/certificates/{certificate_id}/revoke": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Revoke a certificate
+     * @description Revokes a certificate Pantech issued at its certificate authority, within a minute (`revocation_pending` until then). It is then no longer trusted and never renewed. Send `reason: key_compromise` if its private key may have leaked. Refused while a Pantech service uses it; imported certificates are revoked with the authority that issued them. Owners and admins only.
+     *
+     *     **Idempotency:** a retry with the same `Idempotency-Key` answers the original result.
+     *
+     *     **Scope:** `delete`.
+     */
+    post: operations["revokeCertificate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description An organization's namespace on the private container registry. */
+    RegistryNamespace: {
+      /**
+       * @description The namespace: the first part of every image name.
+       * @example acme
+       */
+      name: string;
+      /**
+       * @description The registry's host name.
+       * @example registry.pantechdynamics.com
+       */
+      registry_host: string;
+      /** @description Whether a push to a repository that does not exist creates it. */
+      create_on_push: boolean;
+      /** @description Repositories in the namespace. */
+      repository_count: number;
+      /** @description Storage your images use, in bytes, measured hourly: each layer counted once however many images share it. */
+      storage_bytes: number;
+      /** @description The storage limit; pushes are refused at it. */
+      storage_limit_bytes: number;
+      /** @description How many repositories the organization may have. */
+      repository_limit: number;
+      /**
+       * Format: date-time
+       * @description When it was claimed (RFC 3339, UTC).
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description When it last changed (RFC 3339, UTC).
+       */
+      updated_at: string;
+      /** @description Increases with every change. */
+      version: number;
+    };
+    SetRegistryNamespaceRequest: {
+      /**
+       * @description 3 to 30 lower-case letters, digits and single hyphens, starting with a letter.
+       * @example acme
+       */
+      name: string;
+      /** @description Whether a push may create a repository. Left out: unchanged (on for a new namespace). */
+      create_on_push?: boolean;
+    };
+    /** @description A retention policy. Each rule is null when off. */
+    RegistryRetention: {
+      /** @description Keep the newest N tags (by push time) that `keep_pattern` does not protect; older ones are untagged daily. */
+      keep_last: number | null;
+      /** @description Delete images no tag points at once they are older than this many days. */
+      untagged_after_days: number | null;
+      /** @description A glob, such as `v*` or `release-*`: matching tags are never removed by retention. */
+      keep_pattern: string | null;
+    };
+    /** @description A retention policy. A rule left out or null is off. */
+    RegistryRetentionInput: {
+      /** @description Keep the newest N tags. */
+      keep_last?: number | null;
+      /** @description Delete untagged images older than this many days. */
+      untagged_after_days?: number | null;
+      /** @description Tags matching this glob are never removed. */
+      keep_pattern?: string | null;
+    } | null;
+    /** @description A repository in the private container registry. */
+    RegistryRepository: {
+      /** @description e.g. `crr_...`. */
+      id: string;
+      /** @example acme */
+      namespace: string;
+      /**
+       * @description The repository's name inside the namespace.
+       * @example api/server
+       */
+      name: string;
+      /**
+       * @description The image name to push and pull, without a tag.
+       * @example registry.pantechdynamics.com/acme/api/server
+       */
+      full_name: string;
+      /** @description Your note about it; may be empty. */
+      description: string;
+      /**
+       * @description `private` (members and credentials only) or `public` (anyone may pull).
+       * @enum {string}
+       */
+      visibility: "private" | "public";
+      /** @description Whether tags, once pushed, can never be moved or deleted. */
+      immutable_tags: boolean;
+      retention: components["schemas"]["RegistryRetention"];
+      tag_count: number;
+      /** @description Storage the repository's images use, measured hourly. */
+      storage_bytes: number;
+      /**
+       * Format: date-time
+       * @description When an image was last pushed; null before the first push.
+       */
+      last_pushed_at: string | null;
+      /**
+       * @description `active`, `deleting`, or `suspended` (by an operator).
+       * @enum {string}
+       */
+      status: "active" | "deleting" | "suspended";
+      /** @description Why an operator suspended it; null unless `suspended`. */
+      suspended_reason: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      /** @description Increases with every change. */
+      version: number;
+    };
+    RegistryRepositoryList: {
+      data: components["schemas"]["RegistryRepository"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    CreateRegistryRepositoryRequest: {
+      /**
+       * @description Lower-case path components separated by `/`, such as `api/server`.
+       * @example api/server
+       */
+      name: string;
+      description?: string;
+      /**
+       * @description Default `private`.
+       * @enum {string}
+       */
+      visibility?: "private" | "public";
+      /** @description Default false. */
+      immutable_tags?: boolean;
+      retention?: components["schemas"]["RegistryRetentionInput"];
+    };
+    UpdateRegistryRepositoryRequest: {
+      description?: string;
+      /** @enum {string} */
+      visibility?: "private" | "public";
+      immutable_tags?: boolean;
+      retention?: components["schemas"]["RegistryRetentionInput"];
+    };
+    /** @description A tag and the image it points at. */
+    RegistryTag: {
+      /** @example v1.4.2 */
+      name: string;
+      /** @example sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 */
+      digest: string;
+      /**
+       * @description The manifest's media type: an image index (several platforms) or a single image.
+       * @example application/vnd.oci.image.index.v1+json
+       */
+      media_type: string;
+      /** @description The image's size: the manifest and the layers it references. */
+      size_bytes: number;
+      /**
+       * @description For an index, the platforms it holds, such as `linux/amd64`.
+       * @example [
+       *       "linux/amd64",
+       *       "linux/arm64"
+       *     ]
+       */
+      platforms: string[];
+      /**
+       * Format: date-time
+       * @description When the tag was pushed to this image.
+       */
+      pushed_at: string;
+      /**
+       * Format: date-time
+       * @description When it was last pulled; null if never.
+       */
+      last_pulled_at: string | null;
+      /** @description Whether the tag can never be moved or deleted (the repository has immutable tags). */
+      immutable: boolean;
+    };
+    RegistryTagList: {
+      data: components["schemas"]["RegistryTag"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    /** @description A credential for the registry only. Its secret is never shown again after creation. */
+    RegistryToken: {
+      /** @description e.g. `prt_...`. */
+      id: string;
+      /** @example github-actions */
+      name: string;
+      /**
+       * @description `pull`, or `push` (which includes pull).
+       * @enum {string}
+       */
+      permission: "pull" | "push";
+      /** @description The repositories it may use; empty for every repository in the namespace. */
+      repositories: string[];
+      /**
+       * Format: date-time
+       * @description When it stops working; null if never.
+       */
+      expires_at: string | null;
+      /**
+       * Format: date-time
+       * @description When it last signed in, to the minute; null if never.
+       */
+      last_used_at: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description When it was revoked; null if it was not.
+       */
+      revoked_at: string | null;
+    };
+    RegistryTokenWithSecret: components["schemas"]["RegistryToken"] & {
+      /** @description The token's secret, `prt_…`, shown in this answer only: the password for `docker login`. Null on an idempotent replay, since it is never stored. */
+      secret: string | null;
+    };
+    RegistryTokenList: {
+      data: components["schemas"]["RegistryToken"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    CreateRegistryTokenRequest: {
+      /** @example github-actions */
+      name: string;
+      /** @enum {string} */
+      permission: "pull" | "push";
+      /** @description Repository names in your namespace, such as `api/server`; left out or empty for all of them. */
+      repositories?: string[];
+      /**
+       * Format: date-time
+       * @description When it stops working (RFC 3339), at most 10 years away; left out for never.
+       */
+      expires_at?: string;
+    };
     /** @description Returned with `202 Accepted` by every asynchronous write. */
     Accepted: {
       /** @description The operation carrying out the change. Poll `GET /public/v1/operations/{operation_id}` (also the `Location` header) until `status` is `succeeded` or `failed`. */
@@ -3565,11 +5155,27 @@ export interface components {
        */
       zone_id?: string;
       /**
-       * @description The listener protocol. Only `tcp` is offered: HTTP and HTTPS are balanced as `tcp` and reach your instances unchanged, so serve TLS on the instances. Anything else is `422 LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`.
+       * @description The listener protocol. `tcp` passes traffic through unchanged (both kinds). `https` ends TLS on the load balancer with `certificate_id` and speaks plain HTTP to your instances (`appliance` only; `vpc_native` is `422 LOAD_BALANCER_TLS_NOT_SUPPORTED`). Anything else is `422 LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`.
        * @default tcp
        * @enum {string}
        */
-      protocol?: "tcp";
+      protocol?: "tcp" | "https";
+      /**
+       * @description `https` only, and required there: an issued certificate from `/public/v1/certificates`. While the load balancer uses it, the certificate cannot be deleted or revoked; renewals reach the load balancer by themselves.
+       * @example cert_06gk3x9tq7m2v8r4y1c5d0zp8w
+       */
+      certificate_id?: string;
+      /**
+       * @description `https` only. `modern`: TLS 1.2 and 1.3 with forward-secret AEAD ciphers only. `tls13`: TLS 1.3 only.
+       * @default modern
+       * @enum {string}
+       */
+      tls_policy?: "modern" | "tls13";
+      /**
+       * @description `https` only. Also answer port 80, redirecting every request to HTTPS with a `301`.
+       * @default false
+       */
+      redirect_http?: boolean;
       /**
        * @description `vpc_native` (a VPC zone: needs `public_ip_id` and `subnet_id`) or `appliance` (a standard zone: needs `zone_id`; a load balancer VM with its own public address, billed as that VM). Left out, it is `vpc_native` when `subnet_id` is given and `appliance` when only `zone_id` is. Anything else is `422 INVALID_LOAD_BALANCER_KIND`; an appliance in a zone that does not offer one fails its operation with `LOAD_BALANCER_APPLIANCE_UNAVAILABLE`, and one whose load balancer never starts serving fails it with `LOAD_BALANCER_APPLIANCE_NOT_READY` and is removed.
        * @enum {string}
@@ -3597,7 +5203,7 @@ export interface components {
        */
       public_port: number;
       /**
-       * @description The port on each target. Defaults to `public_port`.
+       * @description The port on each target. Defaults to `public_port`, or to `80` for `https` (the load balancer speaks plain HTTP to the targets).
        * @example 8443
        */
       private_port?: number;
@@ -3631,6 +5237,18 @@ export interface components {
        *     ]
        */
       instance_ids?: string[];
+      /**
+       * @description `https` only: serve this certificate instead. The previous one is released once the change is accepted.
+       * @example cert_06gk3x9tq7m2v8r4y1c5d0zp8w
+       */
+      certificate_id?: string;
+      /**
+       * @description `https` only.
+       * @enum {string}
+       */
+      tls_policy?: "modern" | "tls13";
+      /** @description `https` only: turn the port 80 redirect on or off. */
+      redirect_http?: boolean;
     };
     LoadBalancerMember: {
       instance_id: string;
@@ -3688,6 +5306,17 @@ export interface components {
       created_at: string | null;
       /** Format: date-time */
       updated_at: string | null;
+      /** @description The certificate an `https` listener serves; null for `tcp`. */
+      certificate_id: string | null;
+      /**
+       * @description `modern` or `tls13` for `https`; null for `tcp`.
+       * @enum {string|null}
+       */
+      tls_policy: "modern" | "tls13" | null;
+      /** @description Whether port 80 redirects to HTTPS. */
+      redirect_http: boolean;
+      /** @description The SHA-256 of the certificate the load balancer serves right now (its leaf, lower-case hex), to compare with the certificate's `fingerprint_sha256` after a renewal; null until it first serves one. */
+      certificate_fingerprint_sha256: string | null;
     };
     LoadBalancerList: {
       data: components["schemas"]["LoadBalancer"][];
@@ -4942,6 +6571,10 @@ export interface components {
         scopes: ("read" | "write" | "delete")[];
         /** Format: date-time */
         expires_at: string | null;
+        /** @description The key's own policy: allow statements that narrow what the key may do. Null when it has none. */
+        key_policy: {
+          statements: components["schemas"]["IamStatement"][];
+        } | null;
       };
     };
     MetricsSeries: {
@@ -6472,6 +8105,991 @@ export interface components {
         name: string;
         content: string;
       }[];
+    };
+    /** @description A zone hosted on Pantech DNS. */
+    DNSZone: {
+      /** @description e.g. `dnsz_...`. */
+      id: string;
+      /**
+       * @description The zone's name, lower-case; an internationalised name in punycode.
+       * @example example.com
+       */
+      name: string;
+      /**
+       * @description Your note about it; may be empty.
+       * @example Marketing site
+       */
+      description: string;
+      /**
+       * @description `pending` (being created), `awaiting_delegation` (set `name_servers` at your registrar), `active` (delegated to Pantech), `suspended` (by an operator), `deleting`, `deleted`, or `failed` (see `failure_code`).
+       * @enum {string}
+       */
+      status: "pending" | "awaiting_delegation" | "active" | "suspended" | "deleting" | "deleted" | "failed";
+      /**
+       * @description Why it failed: `delegation_timeout` (not delegated within 14 days, so it was removed), `provider_rejected` or `provider_limit`. Null unless `failed`.
+       * @enum {string|null}
+       */
+      failure_code: "delegation_timeout" | "provider_rejected" | "provider_limit" | null;
+      /**
+       * @description The zone's own two Pantech DNS name servers, to delegate to at your registrar: set exactly these, no more and no fewer. Every zone gets its own pair, never the one the domain is delegated to when the zone is created, so a stale delegation can never serve someone else's zone. Empty while `pending`.
+       * @example [
+       *       "ana.ns.pantechdynamics.com",
+       *       "ayo.ns.pantechdynamics.com"
+       *     ]
+       */
+      name_servers: string[];
+      /** @description The Pantech domain (`dom_…`) delegated to this zone; null when none is. */
+      domain_id: string | null;
+      /** @description Record sets in the zone, including the managed SOA and NS. */
+      record_count: number;
+      /**
+       * Format: date-time
+       * @description When its delegation was last checked (RFC 3339, UTC); null before the first check.
+       */
+      last_checked_at: string | null;
+      /**
+       * Format: date-time
+       * @description While the zone awaits delegation, when it is removed if the registrar still does not delegate to its name servers (14 days after it started waiting); null otherwise.
+       */
+      delegation_deadline_at: string | null;
+      /**
+       * Format: date-time
+       * @description When it last became `active` (RFC 3339, UTC); null if it never has.
+       */
+      activated_at: string | null;
+      /** @description Why an operator suspended it; null unless `suspended`. */
+      suspended_reason: string | null;
+      /**
+       * Format: date-time
+       * @description When it was created (RFC 3339, UTC).
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description When it last changed (RFC 3339, UTC).
+       */
+      updated_at: string;
+      /** @description Increases with every change. */
+      version: number;
+    };
+    /** @description What hosted zones cost: the first free_zones live zones are free, each further one is billed per hour. */
+    DNSZoneQuote: {
+      /** @description Live zones each organization keeps for free: 5. */
+      free_zones: number;
+      /** @description Your live zones now. */
+      live_zones: number;
+      /** @description Your live zones beyond the free ones: max(0, live_zones - free_zones). */
+      billable_zones: number;
+      /** @enum {string} */
+      currency: "NGN" | "USD";
+      /**
+       * Format: int64
+       * @description One zone beyond the free ones over a 730-hour month, in the minor unit of currency (50 is $0.50).
+       */
+      monthly_per_zone_minor: number;
+      /**
+       * Format: int64
+       * @description billable_zones × monthly_per_zone_minor: what your zones beyond the free ones cost a month at today's price.
+       */
+      monthly_estimate_minor: number;
+      /** @constant */
+      nominal_month_hours: 730;
+    };
+    DNSZoneList: {
+      data: components["schemas"]["DNSZone"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    /** @description One record set: a name and type, its TTL and every value. */
+    DNSRecord: {
+      /** @description e.g. `dnsr_...`. */
+      id: string;
+      /** @description The zone (`dnsz_…`). */
+      zone_id: string;
+      /**
+       * @description Relative to the zone: `@` for the apex, `www`, `*.dev`, `_dmarc`.
+       * @example www
+       */
+      name: string;
+      /**
+       * @description The absolute name, without a trailing dot.
+       * @example www.example.com
+       */
+      fqdn: string;
+      /**
+       * @description `SOA` only for the managed apex record.
+       * @enum {string}
+       */
+      type: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "CAA" | "NS" | "PTR" | "SOA";
+      /**
+       * @description Seconds resolvers may cache it, 60 to 86400.
+       * @example 300
+       */
+      ttl: number;
+      /**
+       * @description Its values, canonical and sorted: host names with a trailing dot, TXT as quoted 255-byte strings.
+       * @example [
+       *       "203.0.113.10",
+       *       "203.0.113.11"
+       *     ]
+       */
+      values: string[];
+      /** @description Whether private and carrier-grade NAT addresses are allowed in `values`. */
+      allow_private: boolean;
+      /** @description Your note about it; may be empty. Never published in DNS. */
+      comment: string;
+      /** @description True for the apex `SOA` and `NS`, which Pantech manages: read-only. */
+      managed: boolean;
+      /**
+       * @description `pending` until its latest change is live, `active`, `deleting`, or `failed` (see `failure_code`; the last values that applied keep answering).
+       * @enum {string}
+       */
+      status: "pending" | "active" | "deleting" | "failed";
+      /** @description Why its latest change failed, e.g. `invalid_change`. Null unless `failed`. */
+      failure_code: string | null;
+      /** @description Increases with every change; send it as `If-Match` to change only what you read. */
+      version: number;
+      /**
+       * Format: date-time
+       * @description When it was created (RFC 3339, UTC).
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description When it last changed (RFC 3339, UTC).
+       */
+      updated_at: string;
+    };
+    DNSRecordList: {
+      data: components["schemas"]["DNSRecord"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    DNSRecordBatchResult: {
+      /** @description Every record set changed, in the order of the changes. */
+      data: components["schemas"]["DNSRecord"][];
+    };
+    CreateDNSZoneRequest: {
+      /**
+       * @description A domain you own or a subdomain of one, at most 253 characters. Internationalised names are accepted.
+       * @example example.com
+       */
+      name: string;
+      /**
+       * @description A note for yourself, at most 255 characters.
+       * @example Marketing site
+       */
+      description?: string;
+    };
+    UpdateDNSZoneRequest: {
+      /** @description A new note, at most 255 characters. */
+      description?: string;
+    };
+    CreateDNSRecordRequest: {
+      /**
+       * @description Relative to the zone (`@`, `www`, `*.dev`, `_dmarc`), or fully qualified ending in the zone.
+       * @example www
+       */
+      name: string;
+      /** @enum {string} */
+      type: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "CAA" | "NS" | "PTR";
+      /**
+       * @description Seconds, 60 to 86400. Defaults to 300.
+       * @default 300
+       */
+      ttl?: number;
+      /**
+       * @description 1 to 100 values in the type's format.
+       * @example [
+       *       "203.0.113.10"
+       *     ]
+       */
+      values: string[];
+      /** @description Allow private and carrier-grade NAT addresses (for names that resolve inside a private network). Defaults to false. */
+      allow_private?: boolean;
+      /** @description A note for yourself, at most 255 characters. */
+      comment?: string;
+    };
+    UpdateDNSRecordRequest: {
+      /** @description A new TTL in seconds. */
+      ttl?: number;
+      /** @description The new values, replacing every old one. */
+      values?: string[];
+      allow_private?: boolean;
+      /** @description A new note, at most 255 characters. */
+      comment?: string;
+    };
+    DNSRecordChange: {
+      /** @enum {string} */
+      action: "create" | "update" | "delete";
+      /** @description The record set an `update` or `delete` changes (`dnsr_…`). */
+      record_id?: string;
+      /** @description When sent, the record's current version: the change is refused with `412 VERSION_CONFLICT` otherwise. */
+      version?: number;
+      record?: components["schemas"]["DNSRecordChangeRecord"];
+    };
+    /** @description The record set a `create` or `update` writes; a `delete` takes none. For `create`, `name`, `type` and `values` are required, as in *Create a record set*. For `update`, `name` and `type` may be left out (when sent they must be the record's own: a record set is never renamed or retyped), and the record set's TTL, values, `allow_private` and comment become exactly what is sent here: send `values`, and send `ttl` to keep a TTL other than the default 300. */
+    DNSRecordChangeRecord: {
+      /**
+       * @description Relative to the zone (`@`, `www`, `*.dev`, `_dmarc`), or fully qualified ending in the zone.
+       * @example www
+       */
+      name?: string;
+      /** @enum {string} */
+      type?: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "CAA" | "NS" | "PTR";
+      /** @default 300 */
+      ttl?: number;
+      /** @description 1 to 100 values in the type's format. */
+      values?: string[];
+      allow_private?: boolean;
+      /** @description At most 255 characters. */
+      comment?: string;
+    };
+    DNSRecordBatchRequest: {
+      /** @description 1 to 1,000 changes, applied in order, all or nothing. */
+      changes: components["schemas"]["DNSRecordChange"][];
+    };
+    ImportDNSZoneRequest: {
+      /**
+       * @description A BIND zone file, at most 2 MiB.
+       * @example $ORIGIN example.com.
+       *     $TTL 300
+       *     www IN A 203.0.113.10
+       */
+      zone_file: string;
+      /** @description Also delete record sets that are not in the file. Defaults to false. */
+      replace?: boolean;
+    };
+    /** @description One TLD on sale, priced per year. */
+    TLDOffer: {
+      /** @example com */
+      tld: string;
+      /** @enum {string} */
+      currency: "NGN" | "USD";
+      /**
+       * @description The first year of a registration, in minor units.
+       * @example 1500
+       */
+      register_minor: number;
+      /**
+       * @description Each further year, and each year of a renewal.
+       * @example 1500
+       */
+      renew_minor: number;
+      /**
+       * @description A transfer in, which adds one year.
+       * @example 1500
+       */
+      transfer_minor: number;
+      /** @description Whether search tries this TLD for a bare name. */
+      featured: boolean;
+      /** @description The TLD's registry hides every registrant's contact details itself, so privacy is always on for its domains and cannot be turned off (asking to turn it off is 422 VALIDATION_FAILED on `privacy`, code PRIVACY_ALWAYS_ON). True for .ng and its second levels. */
+      privacy_always_on?: boolean;
+    };
+    TLDOfferList: {
+      data: components["schemas"]["TLDOffer"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    DomainSearchResult: {
+      /** @example example.com */
+      name: string;
+      /** @example com */
+      tld: string;
+      /**
+       * @description `unknown`: it could not be checked; try again.
+       * @enum {string}
+       */
+      status: "available" | "unavailable" | "unknown";
+      /** @description Its TLD's price; null when the TLD is not sold. */
+      price: {
+        tld: string;
+        /** @enum {string} */
+        currency: "NGN" | "USD";
+        register_minor: number;
+        renew_minor: number;
+        transfer_minor: number;
+        featured: boolean;
+        privacy_always_on?: boolean;
+      } | null;
+    };
+    DomainSearchResultList: {
+      data: components["schemas"]["DomainSearchResult"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    DomainTransferCheck: {
+      /** @example example.com */
+      name: string;
+      transferable: boolean;
+      /** @description A stable code saying why it cannot be transferred now; null when it can. */
+      reason: string | null;
+      /** @description Its TLD's price; null when the TLD is not sold. */
+      price: {
+        tld: string;
+        /** @enum {string} */
+        currency: "NGN" | "USD";
+        register_minor: number;
+        renew_minor: number;
+        transfer_minor: number;
+        featured: boolean;
+        privacy_always_on?: boolean;
+      } | null;
+    };
+    /** @description A domain Pantech holds for your organization. The registrant contact is never part of it. */
+    Domain: {
+      /** @description e.g. `dom_...`. */
+      id: string;
+      /** @example example.com */
+      name: string;
+      /** @example com */
+      tld: string;
+      /** @enum {string} */
+      status:
+        | "pending"
+        | "registering"
+        | "transferring"
+        | "active"
+        | "expired"
+        | "failed"
+        | "transferred_out"
+        | "suspended";
+      /** @description Why its registration or transfer failed (the order's `failure_code`); null otherwise. */
+      failure_code: string | null;
+      /** @description Whether Pantech renews it for a year 30 days before expiry, paid from credit. */
+      auto_renew: boolean;
+      transfer_lock: boolean;
+      /** @description Whether the registrant's details are hidden from public lookups. */
+      privacy: boolean;
+      /** @enum {string} */
+      name_server_mode: "pantech" | "custom";
+      /**
+       * @example [
+       *       "ana.ns.pantechdynamics.com",
+       *       "ayo.ns.pantechdynamics.com"
+       *     ]
+       */
+      name_servers: string[];
+      /** @description The Pantech zone it is delegated to; null for custom name servers. */
+      zone_id: string | null;
+      /** Format: date-time */
+      registered_at: string | null;
+      /** Format: date-time */
+      expires_at: string | null;
+      /** @description False until the registrant clicks the registry's verification email; an unverified registrant is suspended after 15 days. */
+      contact_verified: boolean;
+      /** @description True while a lock, privacy, name server or contact change is being applied at the registry. */
+      settings_pending: boolean;
+      /** @description True while an auth code is being fetched. */
+      auth_code_pending: boolean;
+      suspended_reason: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      version: number;
+    };
+    DomainList: {
+      data: components["schemas"]["Domain"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    /** @description One paid action on a domain. When the organization's credit does not cover an order (one you placed, or an automatic renewal), the order waits in `awaiting_payment` for up to an hour. In US dollars Pantech charges the saved card the difference (`payment_url` is set only when the bank asks the customer to confirm the payment); in naira the customer adds credit. The order is charged from credit and goes on as soon as the money arrives; `POST /domain-orders/{order_id}/retry-payment` tries again at once and waits another hour. If it is not paid in time the order fails with `insufficient_credit` and nothing is charged; anything paid stays in your credit. */
+    DomainOrder: {
+      /** @description e.g. `dor_...`. */
+      id: string;
+      domain_id: string;
+      /** @example example.com */
+      domain_name: string;
+      /** @enum {string} */
+      kind: "register" | "renew" | "transfer";
+      years: number;
+      /** @description The price before VAT, in minor units. It is taken from credit, VAT included where applicable, before the registry is asked, and is not put on an invoice. */
+      amount_minor: number;
+      /** @enum {string} */
+      currency: "NGN" | "USD";
+      /**
+       * @description `pending` → `paid` → `submitted` → `succeeded` | `failed`. A pending order whose credit falls short becomes `awaiting_payment` (a saved-card charge in US dollars, a deposit in naira; see `payment_url` and `retry-payment`), then `paid`, or `failed` with `insufficient_credit`.
+       * @enum {string}
+       */
+      status: "pending" | "awaiting_payment" | "paid" | "submitted" | "succeeded" | "failed";
+      /** @enum {string|null} */
+      failure_code:
+        | "insufficient_credit"
+        | "domain_unavailable"
+        | "price_changed"
+        | "registrar_rejected"
+        | "transfer_rejected"
+        | "invalid_auth_code"
+        | "contact_rejected"
+        | "tld_not_sold"
+        | "billing_unavailable"
+        | "domain_expired"
+        | null;
+      /** @description Whether a failed order's charge, VAT included, was returned to credit. */
+      refunded: boolean;
+      /**
+       * Format: uri
+       * @description While `status` is `awaiting_payment`: the page where your bank asks you to confirm the saved-card payment of the difference (US dollars only), when it does. Null when no confirmation is needed, while a naira order waits for credit you add, and in every other status.
+       */
+      payment_url: string | null;
+      /**
+       * Format: date-time
+       * @description While `status` is `awaiting_payment`: when the order stops waiting and fails with `insufficient_credit`. Null otherwise.
+       */
+      payment_expires_at: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      completed_at: string | null;
+    };
+    DomainOrderList: {
+      data: components["schemas"]["DomainOrder"][];
+      /** @description Always null: the latest 50 orders are returned whole. */
+      next_cursor: string | null;
+    };
+    DomainWithOrder: {
+      domain: components["schemas"]["Domain"];
+      order: components["schemas"]["DomainOrder"];
+    };
+    /** @description The registrant, also used as the admin and technical contact. Personal data. When read, every field is sent (an optional one left empty is an empty string). For `.ng` and its second levels (`com.ng`, `org.ng`, `net.ng`, `name.ng`, `mobi.ng`, `i.ng`): `state` and `postal_code` are required, and a `name.ng` registrant must be `type: person` (otherwise `422 VALIDATION_FAILED` on `contact.state`, `contact.postal_code` or `contact.type`). Privacy is always on for these domains. */
+    DomainContact: {
+      /**
+       * @description `person` or `company`. Defaults to `person`.
+       * @default person
+       * @enum {string}
+       */
+      type?: "person" | "company";
+      /** @example Ada */
+      first_name: string;
+      /** @example Obi */
+      last_name: string;
+      /** @description The company's name: required when `type` is `company`, optional otherwise. */
+      organization_name?: string;
+      /** @example ada@example.com */
+      email: string;
+      /**
+       * @description `+CC.NUMBER`.
+       * @example +234.8012345678
+       */
+      phone: string;
+      /** @example 1 Marina */
+      address_line1: string;
+      address_line2?: string;
+      /** @example Lagos */
+      city: string;
+      /** @example Lagos */
+      state?: string;
+      /**
+       * @description ISO 3166-1 alpha-2.
+       * @example NG
+       */
+      country_code: string;
+      /** @example 101001 */
+      postal_code?: string;
+    };
+    RegisterDomainRequest: {
+      /** @example example.com */
+      name: string;
+      /** @default 1 */
+      years?: number;
+      contact: components["schemas"]["DomainContact"];
+      /** @description Defaults to false. */
+      auto_renew?: boolean;
+      /** @description Defaults to true. */
+      privacy?: boolean;
+      /** @description Must be true: the registrant accepted the registration agreement. */
+      accept_terms: boolean;
+    };
+    TransferDomainRequest: {
+      /** @example example.com */
+      name: string;
+      /** @description The code from the current registrar. */
+      auth_code: string;
+      /** @default 1 */
+      years?: number;
+      contact: components["schemas"]["DomainContact"];
+      auto_renew?: boolean;
+      /** @description Defaults to true. */
+      privacy?: boolean;
+      accept_terms: boolean;
+    };
+    UpdateDomainRequest: {
+      auto_renew?: boolean;
+      transfer_lock?: boolean;
+      privacy?: boolean;
+    };
+    SetDomainNameServersRequest: {
+      use_pantech_dns: boolean;
+      /** @description With `use_pantech_dns`, the zone to delegate to (`dnsz_…`); defaults to your zone with the domain's name. */
+      zone_id?: string;
+      /**
+       * @description Without `use_pantech_dns`, 2 to 6 host names.
+       * @example [
+       *       "ns1.example.net",
+       *       "ns2.example.net"
+       *     ]
+       */
+      name_servers?: string[];
+    };
+    UpdateDomainContactRequest: {
+      contact: components["schemas"]["DomainContact"];
+    };
+    RenewDomainRequest: {
+      /** @default 1 */
+      years?: number;
+    };
+    DomainAuthCode: {
+      auth_code: string;
+      /**
+       * Format: date-time
+       * @description When it stops being shown (RFC 3339, UTC).
+       */
+      expires_at: string;
+    };
+    DomainAuthCodePending: {
+      /** @enum {string} */
+      status: "pending";
+    };
+    /** @description One action of the closed catalogue. */
+    IamAction: {
+      /**
+       * @description `<service>:<verb>`.
+       * @example instances:Stop
+       */
+      action: string;
+      /** @example instances */
+      service: string;
+      description: string;
+      /** @description What the action is on; empty for an account-wide action such as `billing:BuyCredit`. */
+      resource_types: string[];
+      /** @description The action only reads. A `read` key may call it, and the `read` member baseline grants it (except `iam:Read`). */
+      read: boolean;
+    };
+    IamActionList: {
+      data: components["schemas"]["IamAction"][];
+    };
+    /** @description The organization's access setting. */
+    IamSettings: {
+      /**
+       * @description What a member may do with no policy: `read` every Read action (the default), or `none`.
+       * @enum {string}
+       */
+      member_baseline: "read" | "none";
+      /** @description 0 until an owner first changes it. */
+      version: number;
+      /** Format: date-time */
+      updated_at: string | null;
+    };
+    UpdateIamSettingsRequest: {
+      /** @enum {string} */
+      member_baseline: "read" | "none";
+    };
+    /** @description A named group of the organization's members. */
+    IamTeam: {
+      /** @example team_01jd8x2v3k */
+      id: string;
+      /** @description 1 to 64 characters, unique in the organization (case-insensitive). */
+      name: string;
+      description: string;
+      member_count: number;
+      /** @description The policies attached to the team. */
+      policy_ids: string[];
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      version: number;
+    };
+    IamTeamList: {
+      data: components["schemas"]["IamTeam"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    CreateIamTeamRequest: {
+      /**
+       * @description 1 to 64 characters, trimmed.
+       * @example Platform
+       */
+      name: string;
+      /** @description At most 255 characters. */
+      description?: string;
+    };
+    UpdateIamTeamRequest: {
+      /** @description A new name, 1 to 64 characters. */
+      name?: string;
+      /** @description A new description, at most 255 characters. */
+      description?: string;
+    };
+    IamTeamMember: {
+      user_id: string;
+      email: string;
+      name: string;
+      /** @enum {string} */
+      role: "owner" | "admin" | "member";
+      /** Format: date-time */
+      added_at: string;
+    };
+    IamTeamMemberList: {
+      data: components["schemas"]["IamTeamMember"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    /** @description An active member of the organization. */
+    IamMember: {
+      user_id: string;
+      email: string;
+      name: string;
+      /** @enum {string} */
+      role: "owner" | "admin" | "member";
+      team_ids: string[];
+      /** @description Distinct policies that apply to the member, attached directly or through any of their teams. */
+      policy_count: number;
+    };
+    IamMemberList: {
+      data: components["schemas"]["IamMember"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    IamStatement: {
+      /**
+       * @description Optional (null when absent), unique within the policy, 1 to 64 letters, digits, `_` or `-`.
+       * @example RestartStaging
+       */
+      sid?: string | null;
+      /** @enum {string} */
+      effect: "allow" | "deny";
+      /**
+       * @description Actions from `GET /iam/actions`. `*` is a glob over the whole action string: `instances:*`, `*:Read`, `*`. `*:Delete` matches only verbs that are exactly `Delete`.
+       * @example [
+       *       "instances:Start",
+       *       "instances:Stop"
+       *     ]
+       */
+      actions: string[];
+      /**
+       * @description `*`, a resource id (`vm_…`, `dnsz_…`), or `name:<glob>` matched against the resource's name (`*` and `?`, case-insensitive). An action that creates something matches `*` or a `name:` glob against the name being created.
+       * @example [
+       *       "name:staging-*"
+       *     ]
+       */
+      resources: string[];
+      /** @description All present conditions must hold for the statement to apply; null for none. */
+      conditions?: {
+        /**
+         * @description The request's client address is in one of these IPv4 or IPv6 CIDR blocks (a bare address is its /32 or /128). Null for any address.
+         * @example [
+         *       "102.89.0.0/16"
+         *     ]
+         */
+        source_ip?: string[] | null;
+        /** @description `true`: applies only when the session authenticated with MFA. `false`: applies only when the request lacks MFA. API keys never carry MFA, so a deny with `mfa: false` blocks the action for keys too. Null or omitted: either way. */
+        mfa?: boolean | null;
+      } | null;
+    };
+    /** @description A named document of statements: the organization's own, or one of Pantech's managed policies (`managed: true`, id `pol_pantech_<name>`, read-only). */
+    IamPolicy: {
+      /**
+       * @example pol_01jd8x2v3k
+       * @example pol_pantech_developer
+       */
+      id: string;
+      name: string;
+      description: string;
+      managed: boolean;
+      statements: components["schemas"]["IamStatement"][];
+      attachment_count: number;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      /** @description Send as `If-Match` to change the policy only if it has not changed since. */
+      version: number;
+    };
+    IamPolicyList: {
+      data: components["schemas"]["IamPolicy"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    IamPolicyRequest: {
+      /**
+       * @description 1 to 64 letters, digits, spaces, `.`, `_` or `-`, starting with a letter or digit, unique in the organization. Names starting with `pantech_` are reserved.
+       * @example staging-operators
+       */
+      name: string;
+      /** @description At most 255 characters. */
+      description?: string;
+      statements: components["schemas"]["IamStatement"][];
+    };
+    IamAttachment: {
+      policy_id: string;
+      /** @enum {string} */
+      principal_type: "member" | "team";
+      /** @description A member's user id (`usr_…`) or a team id (`team_…`). */
+      principal_id: string;
+      /** Format: date-time */
+      attached_at: string;
+    };
+    IamAttachmentList: {
+      data: components["schemas"]["IamAttachment"][];
+    };
+    AttachIamPolicyRequest: {
+      /** @enum {string} */
+      principal_type: "member" | "team";
+      /** @description A member's user id or a team id. */
+      principal_id: string;
+    };
+    IamEffectivePolicy: {
+      policy_id: string;
+      /** @description The team that brought the policy; null when it is attached to the member directly. */
+      team_id: string | null;
+    };
+    IamEffectiveAccess: {
+      user_id: string;
+      /** @enum {string} */
+      role: "owner" | "admin" | "member";
+      teams: string[];
+      policies: components["schemas"]["IamEffectivePolicy"][];
+      /** @enum {string} */
+      member_baseline: "read" | "none";
+    };
+    IamSimulationRequest: {
+      /** @description The member to simulate. */
+      user_id: string;
+      /** @example instances:Delete */
+      action: string;
+      /** @description A resource id, such as `vm_01jd…`. */
+      resource?: string;
+      /** @description The resource's name, for `name:` patterns. */
+      resource_name?: string;
+      /** @description The client address to simulate. */
+      source_ip?: string;
+      /** @description Whether the session signed in with MFA; false when omitted. */
+      mfa?: boolean;
+    };
+    IamSimulation: {
+      allowed: boolean;
+      /** @enum {string} */
+      decision: "owner" | "admin" | "allow" | "baseline_read" | "explicit_deny" | "implicit_deny";
+      /** @description The policy whose statement decided, for `allow` and `explicit_deny`. */
+      policy_id: string | null;
+      /** @description That statement's sid, when it has one. */
+      sid: string | null;
+    };
+    /** @description How one name is proved to be yours. */
+    CertificateValidation: {
+      /** @description The name, as on the certificate. */
+      name: string;
+      /**
+       * @description `pantech_dns`: the name is in an active Pantech DNS zone of your organization and Pantech writes the challenge records itself. `cname`: add the CNAME `cname_name` → `cname_target` at your DNS host once.
+       * @enum {string}
+       */
+      method: "pantech_dns" | "cname";
+      /** @description The Pantech DNS zone (`dnsz_…`) for `pantech_dns`; null otherwise. */
+      zone_id: string | null;
+      /** @description For `cname`: the name of the CNAME to add, e.g. `_acme-challenge.example.com`. */
+      cname_name: string | null;
+      /** @description For `cname`: what the CNAME points at. It is the same for every certificate of your organization naming this name. */
+      cname_target: string | null;
+      /**
+       * @description `pending`: waiting for the CNAME. `ready`: the name can be validated. `valid`: validated for the latest issue. `invalid`: the certificate authority could not validate it.
+       * @enum {string}
+       */
+      status: "pending" | "ready" | "valid" | "invalid";
+    };
+    /** @description A Pantech resource using a certificate. */
+    CertificateUsage: {
+      /** @description What uses it, e.g. `load_balancer`. */
+      type: string;
+      /** @description Its id. */
+      id: string;
+    };
+    /** @description A TLS certificate Pantech issued, or one you imported. Never includes the private key. */
+    Certificate: {
+      /** @description e.g. `cert_...`. */
+      id: string;
+      /**
+       * @description `public`: issued and renewed by Pantech through a publicly trusted certificate authority. `imported`: yours, never renewed by Pantech.
+       * @enum {string}
+       */
+      kind: "public" | "imported";
+      /**
+       * @description 1 to 100 DNS names, lower-case, internationalised names in punycode.
+       * @example [
+       *       "example.com",
+       *       "*.example.com"
+       *     ]
+       */
+      names: string[];
+      /** @description The first name when it is at most 64 characters, else null. */
+      common_name: string | null;
+      /** @description Your note about it; may be empty. */
+      description: string;
+      /**
+       * @description The key's algorithm and size. A request is `ecdsa-p256` or `rsa-2048`.
+       * @enum {string}
+       */
+      key_type: "ecdsa-p256" | "ecdsa-p384" | "rsa-2048" | "rsa-3072" | "rsa-4096";
+      /** @description Whether the private key can be exported. Set at creation, never changed. */
+      exportable: boolean;
+      /**
+       * @description `renewing`: a renewal is in progress while the current certificate keeps working.
+       * @enum {string}
+       */
+      status: "pending_validation" | "issuing" | "issued" | "renewing" | "expired" | "revoked" | "failed";
+      /**
+       * @description While an issue or renewal is in progress, what it waits for; null otherwise.
+       * @enum {string|null}
+       */
+      pending_reason:
+        | "awaiting_cname"
+        | "awaiting_dns"
+        | "awaiting_ca"
+        | "rate_limited"
+        | "ca_unavailable"
+        | "validation_failed"
+        | null;
+      /**
+       * @description Why a request `failed`; null otherwise.
+       * @enum {string|null}
+       */
+      failure_code:
+        | "validation_timeout"
+        | "validation_failed"
+        | "caa_forbidden"
+        | "rejected_identifier"
+        | "rate_limited"
+        | "ca_unavailable"
+        | "dns_record_limit"
+        | "ca_rejected"
+        | null;
+      /** @description One per name, for a certificate Pantech issues; empty for an imported one. */
+      validations: components["schemas"]["CertificateValidation"][];
+      /**
+       * Format: date-time
+       * @description While a first issue waits for its CNAMEs: when it fails `validation_timeout`.
+       */
+      validation_deadline_at: string | null;
+      /** @description The issuing certificate authority's name, as written in the certificate. */
+      issuer: string | null;
+      /** @description Hexadecimal. */
+      serial_number: string | null;
+      /** @description SHA-256 of the certificate, lower-case hex. */
+      fingerprint_sha256: string | null;
+      /**
+       * Format: date-time
+       * @description Start of validity.
+       */
+      not_before: string | null;
+      /**
+       * Format: date-time
+       * @description End of validity.
+       */
+      not_after: string | null;
+      /**
+       * Format: date-time
+       * @description When this certificate was last issued or imported.
+       */
+      issued_at: string | null;
+      /**
+       * Format: date-time
+       * @description When Pantech starts renewing it (30 days before `not_after`); null for an imported certificate.
+       */
+      renew_after: string | null;
+      /**
+       * @description For a certificate Pantech issues, once issued; null otherwise.
+       * @enum {string|null}
+       */
+      renewal_status: "scheduled" | "in_progress" | "failing" | null;
+      /** @description Pantech resources using it: each `https` load balancer serving it. A certificate in use cannot be revoked or deleted; its renewals reach those load balancers by themselves. */
+      in_use_by: components["schemas"]["CertificateUsage"][];
+      /** @description True between a revoke request and the authority confirming it. */
+      revocation_pending: boolean;
+      /**
+       * Format: date-time
+       * @description When it was revoked.
+       */
+      revoked_at: string | null;
+      /**
+       * Format: date-time
+       * @description When it was requested or imported.
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Last change.
+       */
+      updated_at: string;
+      /** @description Increments on every change. */
+      version: number;
+    };
+    CertificateList: {
+      data: components["schemas"]["Certificate"][];
+      /** @description Pass as `cursor` for the next page; null on the last one. */
+      next_cursor: string | null;
+    };
+    /** @description A certificate with its private key. Store it as a secret. */
+    ExportedCertificate: {
+      /** @description The certificate, PEM. */
+      certificate_pem: string;
+      /** @description The intermediates, PEM; may be empty for an imported certificate without them. */
+      chain_pem: string;
+      /** @description The private key, PEM: PKCS #8 for a certificate Pantech issued, as imported otherwise. */
+      private_key_pem: string;
+      /**
+       * Format: date-time
+       * @description End of validity.
+       */
+      not_after: string;
+    };
+    /** @description A certificate to request. */
+    RequestCertificateRequest: {
+      /** @description 1 to 100 names; wildcards as `*.example.com`. The first is the common name. */
+      names: string[];
+      /**
+       * @description Default `ecdsa-p256`.
+       * @enum {string}
+       */
+      key_type?: "ecdsa-p256" | "rsa-2048";
+      /** @description Allow exporting the private key later. Default false: the key never leaves Pantech. */
+      exportable?: boolean;
+      /** @description Your note about it. */
+      description?: string;
+    };
+    /** @description A certificate to import. */
+    ImportCertificateRequest: {
+      /** @description The certificate, PEM. Its intermediates may follow it here instead of in `chain_pem`. */
+      certificate_pem: string;
+      /** @description The intermediates, PEM, the certificate's issuer first. Optional. */
+      chain_pem?: string;
+      /** @description The unencrypted private key, PEM. */
+      private_key_pem: string;
+      /** @description Allow exporting the private key later. Default false. */
+      exportable?: boolean;
+      /** @description Your note about it. */
+      description?: string;
+    };
+    /** @description The replacement for an imported certificate, for the same names. */
+    ReimportCertificateRequest: {
+      /** @description The certificate, PEM. Its intermediates may follow it here instead of in `chain_pem`. */
+      certificate_pem: string;
+      /** @description The intermediates, PEM, the certificate's issuer first. Optional. */
+      chain_pem?: string;
+      /** @description The unencrypted private key, PEM. */
+      private_key_pem: string;
+    };
+    /** @description What to change. */
+    UpdateCertificateRequest: {
+      /** @description Your note about it. */
+      description?: string;
+    };
+    /** @description Why the certificate is revoked. */
+    RevokeCertificateRequest: {
+      /**
+       * @description Default `unspecified`.
+       * @enum {string}
+       */
+      reason?: "unspecified" | "key_compromise";
     };
   };
   responses: {
@@ -8562,6 +11180,2896 @@ export interface operations {
       };
       429: components["responses"]["RateLimited"];
       503: components["responses"]["QuotaUnavailable"];
+    };
+  };
+  listDNSZones: {
+    parameters: {
+      query?: {
+        /** @description Only zones whose name contains this text (case-insensitive), at most 255 characters. An internationalised name is matched in its punycode form. */
+        q?: string;
+        /** @description Only zones in this status. */
+        status?: "pending" | "awaiting_delegation" | "active" | "suspended" | "deleting" | "deleted" | "failed";
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Zones. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZoneList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createDNSZone: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDNSZoneRequest"];
+      };
+    };
+    responses: {
+      /** @description The new zone, or the original one on a replay. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The zone's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZone"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `DNS_ZONE_LIMIT_REACHED`: your organization already has 25 zones. Delete one first.
+       *     `DNS_ZONE_CREATE_LIMIT_REACHED`: your organization created 10 zones in the last 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DNS_ZONE_NAME_TAKEN`: your organization already has a zone with this name. Use it.
+       *     `DNS_ZONE_ACTIVE_ELSEWHERE`: another organization serves this name on Pantech. If the domain is yours, contact support.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `name` `REQUIRED`, `INVALID_NAME` or `INVALID_ZONE_NAME`: send a domain you own such as `example.com` or `shop.example.com`: at least two labels, at most 253 characters, not a public suffix such as `com` or `co.uk`.
+       *     `name` `RESERVED_ZONE_NAME`: the name is reserved by Pantech. Choose another.
+       *     `description` `INVALID_DESCRIPTION`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  quoteDNSZones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The price. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZoneQuote"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `NOT_FOUND`: cost quotes are not available on this platform yet. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `INVALID_RESOURCE_STATE`: DNS zones have no price in your currency yet. Show the free allowance without a price. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDNSZone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The zone. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZone"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteDNSZone: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The zone, `deleting`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZone"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_IN_USE_BY_DOMAIN`: a Pantech domain delegates to this zone. Point the domain at other name servers first.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateDNSZone: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDNSZoneRequest"];
+      };
+    };
+    responses: {
+      /** @description The changed zone. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZone"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed.
+       *     `CONFLICT`: the zone was changed at the same time. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `description` `INVALID_DESCRIPTION`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  exportDNSZone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The zone file. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description `attachment; filename="<zone>.zone"`. */
+          "Content-Disposition"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "text/dns; charset=utf-8": string;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  importDNSZone: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ImportDNSZoneRequest"];
+      };
+    };
+    responses: {
+      /** @description Every record set the import created, changed or is deleting. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecordBatchResult"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `INSUFFICIENT_SCOPE`: `replace` is true, and this AI app's key lacks `delete`.
+       *     `DNS_RECORD_LIMIT_REACHED`: the file would take the zone past 10,000 record sets.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_CNAME_CONFLICT`: the file puts a CNAME beside another record; `errors[0].field` names the change.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed. Create the zone again to manage its records.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 4 MiB. A zone file may be up to 2 MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `INVALID_ZONE_FILE`: the zone file does not parse, or a record in it is invalid. `errors[0]` (`field` `zone_file`) says which line or record and why.
+       *     `TOO_MANY_CHANGES`: the file would make more than 1,000 changes. Import it in parts.
+       *     `VALIDATION_FAILED`: `zone_file` `REQUIRED`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listDNSRecords: {
+    parameters: {
+      query?: {
+        /** @description Only the record sets at this name, relative to the zone (`@`, `www`, `*.dev`). */
+        name?: string;
+        /** @description Only record sets whose name contains this text (case-insensitive), at most 255 characters. */
+        q?: string;
+        /** @description Only record sets of this type (case-insensitive). */
+        type?: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "CAA" | "NS" | "PTR" | "SOA";
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Record sets. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecordList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createDNSRecord: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDNSRecordRequest"];
+      };
+    };
+    responses: {
+      /** @description The new record set, `pending`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The record set's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecord"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `DNS_RECORD_LIMIT_REACHED`: the zone already holds 10,000 record sets.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_RECORD_EXISTS`: a record set with this name and type exists. Change it instead.
+       *     `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DNS_CNAME_CONFLICT`: a CNAME must be the only record at its name.
+       *     `DNS_RECORD_READ_ONLY`: the apex `NS` (and `SOA`) are managed by Pantech.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed. Create the zone again to manage its records.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `name` `INVALID_NAME` or `INVALID_RECORD_NAME`: send `@` for the apex, a name inside the zone such as `www` or `_dmarc`, a wildcard such as `*.dev`, or a fully-qualified name ending in the zone. Internationalised names are accepted and stored in punycode.
+       *     `name` `CNAME_AT_APEX`: a CNAME cannot be at the apex; use A or AAAA records there.
+       *     `type` `INVALID_RECORD_TYPE`: send one of `A`, `AAAA`, `CNAME`, `MX`, `TXT`, `SRV`, `CAA`, `NS`, `PTR`.
+       *     `ttl` `INVALID_TTL`: send 60 to 86400 seconds.
+       *     `values` `INVALID_VALUES`: send 1 to 100 distinct values.
+       *     `values[i]` `INVALID_VALUE`: that value is not valid for the type; `message` says why (for example a private address without `allow_private`).
+       *     `comment` `INVALID_COMMENT`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  batchDNSRecords: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DNSRecordBatchRequest"];
+      };
+    };
+    responses: {
+      /** @description Every record set the batch created, changed or is deleting, in the order of the changes. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecordBatchResult"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `INSUFFICIENT_SCOPE`: the batch deletes, and this AI app's key lacks `delete`.
+       *     `DNS_RECORD_LIMIT_REACHED`: the creates would take the zone past 10,000 record sets.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       *     `DNS_RECORD_NOT_FOUND`: a change's `record_id` names no record in this zone; `errors[0].field` is `changes[i].record_id`.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_RECORD_EXISTS`, `DNS_CNAME_CONFLICT`, `DNS_RECORD_READ_ONLY` or `CONFLICT`: one change is refused, as for a single change; `errors[0].field` names it (`changes[i]`).
+       *     `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed. Create the zone again to manage its records.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VERSION_CONFLICT`: a change's `version` is not the record's current one; `errors[0].field` is `changes[i].version`. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `TOO_MANY_CHANGES`: more than 1,000 changes. Split them into smaller batches.
+       *     `VALIDATION_FAILED`: a change is invalid. `field` names it inside the batch: `changes` `REQUIRED` (no changes), `changes[i].action` `INVALID_ACTION` (send `create`, `update` or `delete`), `changes[i].record_id` `REQUIRED`, `INVALID_RECORD_ID` or `DUPLICATE_RECORD` (a record may appear once per batch), `changes[i].record` `REQUIRED`, `changes[i].version` `INVALID_VERSION`, or `changes[i].record.<field>` with the codes of *Create a record set*.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDNSRecord: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+        /** @description The record set's id (`dnsr_…`). */
+        record_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The record set. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecord"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       *     `DNS_RECORD_NOT_FOUND`: no record with this id in this zone. List the zone's records to find it.
+       *     `RESOURCE_NOT_FOUND`: the record id is not a record id (`dnsr_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteDNSRecord: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+        /** @description The record's `version`. The change is refused with `412 VERSION_CONFLICT` unless it is still the current version. Leave it out to change whatever is there. An entity-tag form (`"3"`) is accepted too. */
+        "If-Match"?: number;
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+        /** @description The record set's id (`dnsr_…`). */
+        record_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The record set, `deleting`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecord"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `VALIDATION_FAILED` with `If-Match` `INVALID_VERSION`: send the record's `version`, a positive integer.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       *     `DNS_RECORD_NOT_FOUND`: no record with this id in this zone. List the zone's records to find it.
+       *     `RESOURCE_NOT_FOUND`: the record id is not a record id (`dnsr_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_RECORD_READ_ONLY`: the apex `SOA` and `NS` are managed by Pantech.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed. Create the zone again to manage its records.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VERSION_CONFLICT`: `If-Match` is not the record's current version. Get it again and retry. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateDNSRecord: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+        /** @description The record's `version`. The change is refused with `412 VERSION_CONFLICT` unless it is still the current version. Leave it out to change whatever is there. An entity-tag form (`"3"`) is accepted too. */
+        "If-Match"?: number;
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+        /** @description The record set's id (`dnsr_…`). */
+        record_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDNSRecordRequest"];
+      };
+    };
+    responses: {
+      /** @description The changed record set, `pending` when its TTL or values changed. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSRecord"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       *     `VALIDATION_FAILED` with `If-Match` `INVALID_VERSION`: send the record's `version`, a positive integer.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       *     `DNS_RECORD_NOT_FOUND`: no record with this id in this zone. List the zone's records to find it.
+       *     `RESOURCE_NOT_FOUND`: the record id is not a record id (`dnsr_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DNS_CNAME_CONFLICT`: a CNAME must be the only record at its name.
+       *     `DNS_RECORD_READ_ONLY`: the apex `SOA` and `NS` are managed by Pantech.
+       *     `CONFLICT`: the record is being deleted.
+       *     `DNS_ZONE_SUSPENDED`: an operator suspended the zone. Contact support.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is being deleted or has failed. Create the zone again to manage its records.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VERSION_CONFLICT`: `If-Match` is not the record's current version. Get it again and retry. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `ttl` `INVALID_TTL`: send 60 to 86400 seconds.
+       *     `values` `INVALID_VALUES`: send 1 to 100 distinct values.
+       *     `values[i]` `INVALID_VALUE`: that value is not valid for the type; `message` says why (for example a private address without `allow_private`).
+       *     `comment` `INVALID_COMMENT`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  verifyDNSZone: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The zone's id (`dnsz_…`). */
+        zone_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The zone; the check follows within seconds. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DNSZone"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DNS_ZONE_NOT_FOUND`: no DNS zone with this id in your organization. List your zones to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a DNS zone id (`dnsz_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DNS_UNAVAILABLE`: Pantech DNS is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDomainOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The domain order's id (`dor_…`). */
+        order_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The order. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainOrder"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_ORDER_NOT_FOUND`: no domain order with this id in your organization. List a domain's orders to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain order id (`dor_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  retryDomainOrderPayment: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain order's id (`dor_…`). */
+        order_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The order, due to be tried again now. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainOrder"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_ORDER_NOT_FOUND`: no domain order with this id in your organization. List a domain's orders to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain order id (`dor_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DOMAIN_ORDER_NOT_AWAITING_PAYMENT`: the order is not waiting for a payment, or its payment window has ended. Place the order again. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listDomains: {
+    parameters: {
+      query?: {
+        /** @description Only domains whose name contains this text (case-insensitive), at most 255 characters. */
+        q?: string;
+        /** @description Only domains in this status. */
+        status?:
+          | "pending"
+          | "registering"
+          | "transferring"
+          | "active"
+          | "expired"
+          | "failed"
+          | "transferred_out"
+          | "suspended";
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Domains. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  registerDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterDomainRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain and its order. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The order's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainWithOrder"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `DOMAIN_ORDER_LIMIT_REACHED`: your organization placed 20 domain orders in 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DOMAIN_ALREADY_HELD`: the domain is already on Pantech.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       *     `DOMAIN_NOT_AVAILABLE`: the name is taken, premium or reserved. Search for another.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `TLD_NOT_SOLD`: Pantech does not sell this TLD.
+       *     `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `name` `REQUIRED`, `INVALID_NAME` or `INVALID_DOMAIN_NAME`: send one label and a TLD Pantech sells, such as `example.com`. Internationalised names are accepted and sent in punycode.
+       *     `years` `INVALID_YEARS`: send 1 to 10; some endings (the `.ng` family among them) take at most 5 years per order for organizations billed in naira.
+       *     `contact.<field>` `INVALID_CONTACT`: that contact field is missing or invalid; `message` says why. Required: `first_name`, `last_name`, `email`, `phone` (`+CC.NUMBER`), `address_line1`, `city`, `country_code`, and `organization_name` for a `company`.
+       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the registration agreement.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAIN_LOOKUP_UNAVAILABLE`: availability cannot be checked right now. Try again in a minute.
+       *     `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  searchDomains: {
+    parameters: {
+      query: {
+        /** @description A name such as `example` or `example.com`; an internationalised name is accepted. */
+        query: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Candidate names. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainSearchResultList"];
+        };
+      };
+      /** @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `query` `REQUIRED`, `INVALID_NAME` or `INVALID_QUERY`: send a name such as `example` or `example.com`.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAIN_LOOKUP_UNAVAILABLE`: availability cannot be checked right now. Try again in a minute.
+       *     `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listDomainTLDs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description TLDs on sale. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TLDOfferList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  checkDomainTransfer: {
+    parameters: {
+      query: {
+        /** @description The domain, such as `example.com`. */
+        name: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether the domain can be transferred. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainTransferCheck"];
+        };
+      };
+      /** @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `TLD_NOT_SOLD`: Pantech does not sell this TLD.
+       *     `VALIDATION_FAILED`: `name` `REQUIRED`, `INVALID_NAME` or `INVALID_DOMAIN_NAME`: send one label and a TLD, such as `example.com`.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAIN_LOOKUP_UNAVAILABLE`: transferability cannot be checked right now. Try again in a minute.
+       *     `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  transferDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TransferDomainRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain, `transferring`, and its order. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The order's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainWithOrder"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `DOMAIN_ORDER_LIMIT_REACHED`: your organization placed 20 domain orders in 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DOMAIN_ALREADY_HELD`: the domain is already on Pantech.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       *     `DOMAIN_NOT_TRANSFERABLE`: the registry refuses a transfer now. Check that the domain is unlocked at its registrar, then try again.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `TLD_NOT_SOLD`: Pantech does not sell this TLD.
+       *     `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `name` `REQUIRED`, `INVALID_NAME` or `INVALID_DOMAIN_NAME`: send one label and a TLD Pantech sells, such as `example.com`. Internationalised names are accepted and sent in punycode.
+       *     `years` `INVALID_YEARS`: send 1 to 10; some endings (the `.ng` family among them) take at most 5 years per order for organizations billed in naira.
+       *     `contact.<field>` `INVALID_CONTACT`: that contact field is missing or invalid; `message` says why. Required: `first_name`, `last_name`, `email`, `phone` (`+CC.NUMBER`), `address_line1`, `city`, `country_code`, and `organization_name` for a `company`.
+       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the registration agreement.
+       *     `auth_code` `REQUIRED` or `INVALID_AUTH_CODE`: send the code from the current registrar, 1 to 1024 printable characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAIN_LOOKUP_UNAVAILABLE`: transferability cannot be checked right now. Try again in a minute.
+       *     `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDomain: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The domain. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Domain"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDomainRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Domain"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_CONFIGURABLE`: the domain is not active.
+       *     `CONFLICT`: the domain was changed at the same time. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDomainAuthCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The auth code. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainAuthCode"];
+        };
+      };
+      /** @description Still being fetched: `{"status": "pending"}`. Ask again in a few seconds. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainAuthCodePending"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       *     `DOMAIN_NOT_FOUND` also when no auth code was asked for, or the last one expired: ask again.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  requestDomainAuthCode: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The domain, `auth_code_pending: true`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Domain"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_LOCKED`: the transfer lock is on. Turn it off first.
+       *     `DOMAIN_NOT_CONFIGURABLE`: the domain is not held.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDomainContact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The contact. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainContact"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateDomainContact: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDomainContactRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain, `settings_pending`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Domain"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DOMAIN_NOT_CONFIGURABLE`: the domain is not active. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `contact.<field>` `INVALID_CONTACT`: that contact field is missing or invalid; `message` says why.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  setDomainNameServers: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetDomainNameServersRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain, `settings_pending`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Domain"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       *     `DNS_ZONE_NOT_FOUND`: `zone_id`, or a zone with the domain's name, is not in your organization.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_CONFIGURABLE`: the domain is not active.
+       *     `DNS_ZONE_NOT_WRITABLE`: the zone is pending, suspended, being deleted or failed.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_ZONE_MISMATCH`: the zone's name is not the domain's.
+       *     `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `zone_id` `INVALID_ZONE_ID`: send a zone id (`dnsz_…`).
+       *     `name_servers` `REQUIRED`, `INVALID_NAME` or `INVALID_NAME_SERVERS`: send 2 to 6 distinct host names.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listDomainOrders: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Orders. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainOrderList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  renewDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The domain's id (`dom_…`). */
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenewDomainRequest"];
+      };
+    };
+    responses: {
+      /** @description The domain and the renewal order. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The order's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DomainWithOrder"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `DOMAIN_ORDER_LIMIT_REACHED`: your organization placed 20 domain orders in 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `DOMAIN_NOT_FOUND`: no domain with this id in your organization. List your domains to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a domain id (`dom_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `DOMAIN_ORDER_IN_FLIGHT`: another order for this domain is still running. Wait for it.
+       *     `DOMAIN_NOT_CONFIGURABLE`: the domain is not held or is suspended.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `TLD_NOT_SOLD`: Pantech no longer sells this TLD.
+       *     `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `years` `INVALID_YEARS`: send 1 to 10, keeping the registration within 10 years; some endings (the `.ng` family among them) renew for at most 5 years at a time for organizations billed in naira.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `DOMAINS_UNAVAILABLE`: domains are not sold on this deployment yet, or not to this organization until its billing is set up. Try again later, or finish billing setup in the console.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
     };
   };
   deleteFirewallRule: {
@@ -11969,8 +17477,14 @@ export interface operations {
        *     `subnet_id` `SUBNET_NOT_IN_NETWORK`: the subnet is not in the public IP's private network.
        *     `instance_ids` `INSTANCE_NOT_IN_SUBNET`: every instance must be in the load balancer's subnet.
        *     `instance_ids` `TOO_MANY`: at most 50 instances.
-       *     `protocol` `LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`: only `tcp` listeners are offered. HTTP and HTTPS are balanced as `tcp` and reach your instances unchanged, so serve TLS on the instances.
-       *     `public_port` `LOAD_BALANCER_PORT_RESERVED`: an `appliance` load balancer cannot listen on 8404 or 8405; those ports run the load balancer itself.
+       *     `protocol` `LOAD_BALANCER_PROTOCOL_NOT_SUPPORTED`: the protocol must be `tcp` or `https`.
+       *     `protocol` `LOAD_BALANCER_TLS_NOT_SUPPORTED`: `https` is offered on `appliance` load balancers only; a `vpc_native` one passes TLS through as `tcp`.
+       *     `certificate_id` `CERTIFICATE_REQUIRED`: an `https` listener needs the id of an issued certificate.
+       *     `certificate_id` `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization.
+       *     `certificate_id` `CERTIFICATE_NOT_USABLE`: the certificate is not `issued` or `renewing`, or is being revoked. Wait until it is issued, or choose another.
+       *     `certificate_id` `LOAD_BALANCER_TLS_FIELDS_NOT_ALLOWED`: `certificate_id`, `tls_policy` and `redirect_http` apply to `https` listeners only.
+       *     `tls_policy` `INVALID_TLS_POLICY`: use `modern` or `tls13`.
+       *     `public_port` `LOAD_BALANCER_PORT_RESERVED`: an `appliance` load balancer cannot listen on 8404 or 8405; those ports run the load balancer itself. With `redirect_http`, port 80 is the redirect's and cannot be the listener's.
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
        */
       422: {
@@ -11985,6 +17499,7 @@ export interface operations {
       /**
        * @description `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
        *     `PROVISIONING_UNAVAILABLE`: the provisioning service is temporarily unavailable. Wait a few seconds, then retry with the same `Idempotency-Key`.
+       *     `CERTIFICATES_UNAVAILABLE`: an `https` listener needs certificates, which are not available on this platform yet. Use `tcp`, or try again later.
        */
       503: {
         headers: {
@@ -12215,6 +17730,12 @@ export interface operations {
        *     `public_port` `INVALID_LOAD_BALANCER`: `name` 1 to 63 characters and `algorithm` `roundrobin`, `leastconn` or `source`.
        *     `instance_ids` `INSTANCE_NOT_IN_SUBNET`: every instance must be in the load balancer's subnet.
        *     `instance_ids` `TOO_MANY`: at most 50 instances.
+       *     `certificate_id` `CERTIFICATE_REQUIRED`: an `https` listener always has a certificate; send another id instead of an empty one.
+       *     `certificate_id` `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization.
+       *     `certificate_id` `CERTIFICATE_NOT_USABLE`: the certificate is not `issued` or `renewing`, or is being revoked.
+       *     `certificate_id` `LOAD_BALANCER_TLS_FIELDS_NOT_ALLOWED`: `certificate_id`, `tls_policy` and `redirect_http` apply to `https` listeners only.
+       *     `tls_policy` `INVALID_TLS_POLICY`: use `modern` or `tls13`.
+       *     `public_port` `LOAD_BALANCER_PORT_RESERVED`: an `https` listener on port 80 cannot also redirect port 80.
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
        */
       422: {
@@ -13846,7 +19367,6 @@ export interface operations {
        * @description `KUBERNETES_CLUSTER_NOT_RUNNING`: start the cluster first.
        *     `KUBERNETES_CLUSTER_BUSY`: the cluster is already changing. Wait until it is running or stopped.
        *     `KUBERNETES_CLUSTER_NOT_CHANGEABLE`: the cluster cannot make this change now (stopped, being deleted, or failed).
-       *     `KUBERNETES_NODE_DISK_CANNOT_SHRINK`: the plan's disk is smaller than the disks the cluster's nodes have. Choose a plan with at least the same disk.
        *     `KUBERNETES_NODE_PLAN_NOT_CHANGEABLE`: this cluster's nodes cannot be resized. Add a node pool on the plan you need, or create a new cluster on it.
        *     `CONCURRENT_UPDATE`: the cluster changed while this request was being processed. Retry the request; if it repeats, read the cluster first.
        */
@@ -19390,6 +24910,4060 @@ export interface operations {
       429: components["responses"]["RateLimited"];
       /**
        * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamActions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List actions. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamActionList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIamSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Get the access setting. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamSettings"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateIamSettings: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+        /** @description The version you read; the change is refused with `412 VERSION_CONFLICT` if it is not the current one. */
+        "If-Match"?: number;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateIamSettingsRequest"];
+      };
+    };
+    responses: {
+      /** @description Change the access setting. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamSettings"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VERSION_CONFLICT`: `If-Match` is not the current version. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `member_baseline` is not `read` or `none`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamTeams: {
+    parameters: {
+      query?: {
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List teams. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeamList"];
+        };
+      };
+      /** @description `INVALID_PAGE`, `INVALID_CURSOR`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createIamTeam: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateIamTeamRequest"];
+      };
+    };
+    responses: {
+      /** @description Create a team. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The new object's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeam"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NAME_TAKEN`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIamTeam: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        team_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Get a team. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeam"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteIamTeam: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        team_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Delete a team. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateIamTeam: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        team_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateIamTeamRequest"];
+      };
+    };
+    responses: {
+      /** @description Rename a team. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeam"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NAME_TAKEN`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamTeamMembers: {
+    parameters: {
+      query?: {
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path: {
+        team_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List a team's members. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeamMemberList"];
+        };
+      };
+      /** @description `INVALID_PAGE`, `INVALID_CURSOR`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  addIamTeamMember: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        team_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Add a member to a team. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamTeamMember"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`, `MEMBER_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  removeIamTeamMember: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        team_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Remove a member from a team. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_TEAM_NOT_FOUND`, `MEMBER_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamMembers: {
+    parameters: {
+      query?: {
+        /** @description Only members whose email or name contains this text (case-insensitive), at most 320 characters. */
+        q?: string;
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List members. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamMemberList"];
+        };
+      };
+      /** @description `INVALID_PAGE`, `INVALID_CURSOR`, `INVALID_FILTER`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIamEffectiveAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Get a member's effective access. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamEffectiveAccess"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `MEMBER_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  simulateIamAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IamSimulationRequest"];
+      };
+    };
+    responses: {
+      /** @description Simulate an access decision. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamSimulation"];
+        };
+      };
+      /** @description `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `MEMBER_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `action`, `resource` or `source_ip` is invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamPolicies: {
+    parameters: {
+      query?: {
+        /** @description `true` lists Pantech's managed policies only, `false` the organization's only; omit it for both. */
+        managed?: boolean;
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List policies. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamPolicyList"];
+        };
+      };
+      /** @description `INVALID_PAGE`, `INVALID_CURSOR`, `INVALID_FILTER`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createIamPolicy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IamPolicyRequest"];
+      };
+    };
+    responses: {
+      /** @description Create a policy. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The new object's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamPolicy"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NAME_TAKEN`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `INVALID_POLICY`: `errors` names each bad field, such as `statements[0].actions[2]` or `statements[1].conditions.source_ip[0]`. `VALIDATION_FAILED`: `name` or `description`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIamPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Get a policy. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamPolicy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateIamPolicy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+        /** @description The version you read; the change is refused with `412 VERSION_CONFLICT` if it is not the current one. */
+        "If-Match"?: number;
+      };
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IamPolicyRequest"];
+      };
+    };
+    responses: {
+      /** @description Replace a policy. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamPolicy"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_MANAGED_POLICY`, `IAM_POLICY_NAME_TAKEN`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VERSION_CONFLICT`: `If-Match` is not the current version. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `INVALID_POLICY`, `VALIDATION_FAILED`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteIamPolicy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Delete a policy. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_MANAGED_POLICY`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIamPolicyAttachments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List a policy's attachments. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamAttachmentList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  attachIamPolicy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AttachIamPolicyRequest"];
+      };
+    };
+    responses: {
+      /** @description Already attached: the existing attachment. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamAttachment"];
+        };
+      };
+      /** @description Attach a policy. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IamAttachment"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`, `IAM_TEAM_NOT_FOUND`, `MEMBER_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 256 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `principal_type`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  detachIamPolicy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description A policy id, `pol_…` or `pol_pantech_<name>`. */
+        policy_id: string;
+        principal_type: "member" | "team";
+        principal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Detach a policy. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_IDEMPOTENCY_KEY`: send one `Idempotency-Key` of at most 255 characters with every write. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `ACCESS_DENIED`: the key's member lacks `iam:Read`; `detail` names the action.
+       *     `FORBIDDEN`: the key's member is not an owner or admin (owners only for the access setting), or the key has a key policy.
+       *     `IAM_ADMIN_TARGET`: only owners act on admins, or on teams containing an admin.
+       *     `IAM_TEAM_LIMIT_REACHED`, `IAM_POLICY_LIMIT_REACHED`, `IAM_ATTACHMENT_LIMIT_REACHED`: 50 teams, 100 policies, 10 per member or team.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off for this key or client.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IAM_POLICY_NOT_FOUND`, `IAM_ATTACHMENT_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `IAM_UNAVAILABLE`: teams and access policies are not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getRegistryNamespace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The namespace. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryNamespace"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REGISTRY_NAMESPACE_NOT_SET`: your organization has not claimed a namespace yet. Claim one with `PUT /registry`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  setRegistryNamespace: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetRegistryNamespaceRequest"];
+      };
+    };
+    responses: {
+      /** @description The namespace. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryNamespace"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `REGISTRY_NAMESPACE_TAKEN`: another organization has this namespace. Choose another.
+       *     `REGISTRY_NAMESPACE_LOCKED`: the namespace cannot change once a repository was ever created in it.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `INVALID_REGISTRY_NAMESPACE`: `name` is not a valid namespace, or is reserved.
+       *     `VALIDATION_FAILED`: a field is missing or invalid; `errors` names it.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRegistryRepositories: {
+    parameters: {
+      query?: {
+        /** @description Only repositories whose name contains this text, at most 255 characters. */
+        q?: string;
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Repositories. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryRepositoryList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not valid. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REGISTRY_NAMESPACE_NOT_SET`: your organization has not claimed a namespace yet. Claim one with `PUT /registry`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createRegistryRepository: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRegistryRepositoryRequest"];
+      };
+    };
+    responses: {
+      /** @description The new repository, or the original one on a replay. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The repository's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryRepository"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `REPOSITORY_LIMIT_REACHED`: your organization already has 100 repositories. Delete one first, or contact support to raise the limit.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REGISTRY_NAMESPACE_NOT_SET`: your organization has not claimed a namespace yet. Claim one with `PUT /registry`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `REPOSITORY_EXISTS`: your organization already has a repository with this name.
+       *     `IDEMPOTENCY_CONFLICT`: the `Idempotency-Key` was already used with a different request. Use a new key.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `INVALID_REPOSITORY_NAME`: `name` is not a valid repository name.
+       *     `VALIDATION_FAILED`: a field is missing or invalid; `errors` names it.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getRegistryRepository: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The repository. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryRepository"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteRegistryRepository: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The repository, `deleting`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryRepository"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REPOSITORY_SUSPENDED`: an operator suspended the repository. Contact support. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateRegistryRepository: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateRegistryRepositoryRequest"];
+      };
+    };
+    responses: {
+      /** @description The repository. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryRepository"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `REPOSITORY_SUSPENDED`: an operator suspended the repository. Contact support.
+       *     `CONFLICT`: the repository is being deleted, or was changed at the same time by another request.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is invalid; `errors` names it. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRegistryTags: {
+    parameters: {
+      query?: {
+        /** @description Only tags whose name contains this text, at most 255 characters. */
+        q?: string;
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Tags. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryTagList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not valid. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getRegistryTag: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+        /** @description The tag, such as `v1.4.2` or `latest`. */
+        tag: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The tag. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryTag"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it.
+       *     `TAG_NOT_FOUND`: no tag with this name in the repository.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteRegistryTag: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The repository's id (`crr_…`). */
+        repository_id: string;
+        /** @description The tag, such as `v1.4.2` or `latest`. */
+        tag: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The tag was deleted. No body. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `REPOSITORY_NOT_FOUND`: no repository with this id in your organization. List your repositories to find it.
+       *     `TAG_NOT_FOUND`: no tag with this name in the repository.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `TAG_IMMUTABLE`: the repository has immutable tags, so its tags cannot be deleted.
+       *     `REPOSITORY_SUSPENDED`: an operator suspended the repository. Contact support.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available, or could not be reached; nothing was changed. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRegistryTokens: {
+    parameters: {
+      query?: {
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registry tokens. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryTokenList"];
+        };
+      };
+      /** @description `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is no longer an active member. Use another key.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createRegistryToken: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRegistryTokenRequest"];
+      };
+    };
+    responses: {
+      /** @description The new token and its secret (`secret` is null on a replay). */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistryTokenWithSecret"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `REGISTRY_TOKEN_LIMIT_REACHED`: your organization already has 50 active registry tokens. Revoke one first.
+       *     `ACCESS_DENIED`: an access policy refuses the key's member `registry:ManageTokens`, or the `registry:Pull` or `registry:Push` the token would carry on one of its repositories; `detail` names the action.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REGISTRY_NAMESPACE_NOT_SET`: your organization has not claimed a namespace yet. Claim one with `PUT /registry`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `IDEMPOTENCY_CONFLICT`: the `Idempotency-Key` was already used with a different request. Use a new key. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: a field is missing or invalid; `errors` names it. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteRegistryToken: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The registry token's id (`prt_…`). */
+        token_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Revoked. No body. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope, or it is an AI app's key without `delete`. Use a key with that scope, or reconnect the AI app with "Manage and delete" access.
+       *     `FORBIDDEN`: the member who created the key is not an owner or admin. Use a key created by one.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REGISTRY_TOKEN_NOT_FOUND`: no registry token with this id in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `REGISTRY_UNAVAILABLE`: the container registry is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listCertificates: {
+    parameters: {
+      query?: {
+        /** @description Only certificates with a name containing this text (case-insensitive), at most 255 characters. An internationalised name is matched in its punycode form. */
+        q?: string;
+        /** @description Only certificates in this status. */
+        status?: "pending_validation" | "issuing" | "issued" | "renewing" | "expired" | "revoked" | "failed";
+        /** @description Only certificates Pantech issues (`public`) or you imported (`imported`). */
+        kind?: "public" | "imported";
+        /** @description Items per page, 1 to 100. Defaults to 50. */
+        limit?: components["parameters"]["Limit"];
+        /** @description The previous page's `next_cursor`, to get the next page. Leave out for the first page; keep the other parameters the same. */
+        cursor?: components["parameters"]["Cursor"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Certificates. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CertificateList"];
+        };
+      };
+      /**
+       * @description `INVALID_FILTER`: a query parameter is not one of its allowed values. `detail` names it and what it takes.
+       *     `INVALID_CURSOR`: the cursor is not valid for this list and these filters. Start again without a cursor.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  requestCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RequestCertificateRequest"];
+      };
+    };
+    responses: {
+      /** @description The certificate, waiting for validation; or the original one on a replay. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The certificate's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `CERTIFICATE_LIMIT_REACHED`: your organization already has 100 certificates. Delete one first.
+       *     `CERTIFICATE_REQUEST_LIMIT_REACHED`: your organization requested or imported 20 certificates in the last 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`:
+       *     `names` `REQUIRED` or `INVALID_NAMES`: send 1 to 100 names.
+       *     `names[i]` `INVALID_NAME`: send a domain name such as `example.com` or a wildcard such as `*.example.com`, not a public suffix such as `com` or `*.co.uk`, and not an IP address.
+       *     `names[i]` `RESERVED_NAME`: the name is reserved by Pantech. Choose another.
+       *     `key_type` `INVALID_KEY_TYPE`: send `ecdsa-p256` or `rsa-2048`.
+       *     `description` `INVALID_DESCRIPTION`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_RATE_LIMITED`: your organization requested exactly these names 5 times in the last 7 days. Use one of those certificates, or retry after the `Retry-After` seconds.
+       *     `RATE_LIMITED`: this key sent too many requests. Wait for `Retry-After` seconds.
+       */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  importCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ImportCertificateRequest"];
+      };
+    };
+    responses: {
+      /** @description The imported certificate, or the original one on a replay. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description The certificate's URL. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       *     `CERTIFICATE_LIMIT_REACHED`: your organization already has 100 certificates. Delete one first.
+       *     `CERTIFICATE_REQUEST_LIMIT_REACHED`: your organization requested or imported 20 certificates in the last 24 hours. Try again tomorrow.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_CONFLICT`: this `Idempotency-Key` was already used for a different request. Use a new key.
+       *     `ACCOUNT_SUSPENDED`: the account is suspended or has an overdue invoice, so nothing new can be added. Pay the invoice under Billing in the console, then try again.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 144 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: a field is invalid. Each entry of `errors` names the `field` and its `code`, and `message` says what is wrong:
+       *     `certificate_pem` `REQUIRED`, `INVALID_CERTIFICATE`, `CERTIFICATE_EXPIRED` or `UNSUPPORTED_KEY`.
+       *     `chain_pem` `INVALID_CHAIN`: list the intermediates in order, the certificate's issuer first.
+       *     `private_key_pem` `REQUIRED`, `INVALID_PRIVATE_KEY` (not one unencrypted PEM key), `UNSUPPORTED_KEY` or `KEY_MISMATCH`.
+       *     `description` `INVALID_DESCRIPTION`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getCertificate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The certificate. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `read` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted. */
+      204: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `delete` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_IN_USE`: a load balancer uses this certificate (see `in_use_by`). Point it at another certificate, or delete it, first.
+       *     `CONFLICT`: the certificate was changed at the same time by another request. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  updateCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateCertificateRequest"];
+      };
+    };
+    responses: {
+      /** @description The certificate. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CONFLICT`: the certificate was changed at the same time by another request. Get it again and retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: `description` `INVALID_DESCRIPTION`: send at most 255 characters.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  verifyCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The certificate; it is checked within seconds. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_PENDING`: the certificate is not waiting for its CNAMEs.
+       *     `CONFLICT`: the certificate was changed at the same time by another request. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  reimportCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReimportCertificateRequest"];
+      };
+    };
+    responses: {
+      /** @description The certificate. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_IMPORTED`: Pantech issues and renews this certificate itself; only an imported one can be reimported.
+       *     `CONFLICT`: the certificate was changed at the same time by another request. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 144 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NAMES_MISMATCH`: the new certificate names other names. Import it as a new certificate instead.
+       *     `VALIDATION_FAILED`: as for an import: `certificate_pem`, `chain_pem` or `private_key_pem`, with `code` and `message`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  exportCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The certificate with its private key. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description `no-store`: the answer holds a private key. */
+          "Cache-Control"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExportedCertificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `delete` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_EXPORTABLE`: the certificate was created without `exportable: true`; its key never leaves Pantech.
+       *     `CERTIFICATE_NOT_ISSUED`: the certificate has not been issued yet.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  revokeCertificate: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        /** @description The certificate's id (`cert_…`). */
+        certificate_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RevokeCertificateRequest"];
+      };
+    };
+    responses: {
+      /** @description The certificate, with `revocation_pending: true`. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Certificate"];
+        };
+      };
+      /**
+       * @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. Send a new unique value, such as a UUID, with every write.
+       *     `INVALID_IDEMPOTENCY_KEY`: the `Idempotency-Key` header is longer than 255 characters. Use a shorter value.
+       *     `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. Send one JSON object with the fields documented for this endpoint.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /**
+       * @description `INSUFFICIENT_SCOPE`: the API key lacks the `delete` scope. Use a key with that scope.
+       *     `FORBIDDEN`: the member who created the key may not do this. Use a key created by an owner or admin.
+       *     `ACCESS_DENIED`: your organization's access policies do not allow this action on this certificate (`detail` names the action). Ask an owner or admin to grant it.
+       *     `AI_APPS_DISABLED`: the organization has turned AI app access off, and this request was made with an AI app's key or sent by Pantech's MCP server. An owner can turn it on in the console under Organization › AI apps.
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_FOUND`: no certificate with this id in your organization. List your certificates to find it.
+       *     `RESOURCE_NOT_FOUND`: the id is not a certificate id (`cert_…`). Check the id.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `CERTIFICATE_NOT_REVOCABLE`: the certificate is imported, already revoked, or a revocation is pending.
+       *     `CERTIFICATE_NOT_ISSUED`: the certificate has not been issued yet.
+       *     `CERTIFICATE_IN_USE`: a load balancer uses this certificate (see `in_use_by`). Point it at another certificate, or delete it, first.
+       *     `CONFLICT`: the certificate was changed at the same time by another request. Get it again and retry.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `REQUEST_TOO_LARGE`: the body is larger than 64 KiB. Send a smaller request. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /**
+       * @description `VALIDATION_FAILED`: `reason` `INVALID_REASON`: send `unspecified` or `key_compromise`.
+       *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `CERTIFICATES_UNAVAILABLE`: certificates are not available on this deployment yet. Try again later.
        *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
        */
       503: {

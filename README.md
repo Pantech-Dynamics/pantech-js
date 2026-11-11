@@ -76,6 +76,11 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 | SSH keys, webhooks | `sshKeys.*`, `webhooks.*`, `webhooks.deliveries.*` |
 | Billing and usage | `billing.credit.get()`, `billing.credit.purchases.create(...)`, `billing.receipts.getPdf(id)`, `usage.get()` |
 | Move from another cloud | `migrate.connections.*`, `migrate.scans.*`, `migrate.migrations.*` |
+| DNS | `dns.zones.*` (`exportZoneFile`, `importZoneFile`, `verify`, `wait`), `dns.records.*` (`batch`, `wait`) |
+| Certificates | `certificates.request/import/get/list/update/verify/reimport/export/revoke/delete`, `certificates.wait(id)` |
+| Teams and access policies | `iam.members.list()`, `iam.actions.list()`, `iam.settings.*`, `iam.teams.*`, `iam.teams.members.*`, `iam.policies.*`, `iam.policies.attachments.*`, `iam.effectiveAccess(userId)`, `iam.simulate({...})` |
+| Container registry | `registry.namespace.get/set`, `registry.repositories.*`, `registry.tags.*`, `registry.tokens.*` |
+| Domains | `domains.search({ query })`, `domains.register({...})`, `domains.transfer({...})`, `domains.renew(id)`, `domains.orders.wait(result)` |
 | Operations | `operations.get(id)`, `operations.wait(id)`, `operations.stream(id)` |
 
 Every operation in the public spec has a method, except agent sessions, which answer only AI apps
@@ -104,7 +109,8 @@ for await (const o of client.operations.stream("op_…")) console.log(o.status);
 
 A failed operation rejects with `OperationFailedError` (`code`, `detail` from its `failure`), a
 failed or unpaid order with `OrderFailedError`, a failed cloud connection or scan with
-`CloudFailedError`, and a wait that runs out with `WaitTimeoutError`.
+`CloudFailedError`, a failed DNS zone or record change with `DNSFailedError`, a certificate that
+cannot be issued with `CertificateFailedError`, and a wait that runs out with `WaitTimeoutError`.
 
 ## Move from another cloud
 
@@ -127,6 +133,139 @@ const { files } = await client.migrate.migrations.exportTerraform(plan.id); // m
 `migrate.migrations.updateItem(id, { key, excluded: true })` leaves an item out, or changes its
 plan, size, address range or role, before you export. See `examples/migrate-from-aws.ts`.
 
+## Certificates
+
+`client.certificates` issues TLS certificates through a publicly trusted CA and renews them by
+itself, or holds certificates you import, for Pantech load balancers and your own servers.
+
+```ts
+let cert = await client.certificates.request({ names: ["example.com", "*.example.com"], exportable: true });
+for (const v of cert.validations) {
+  // Names outside your Pantech DNS zones: add this CNAME once.
+  if (v.method === "cname") console.log(v.cname_name, "CNAME", v.cname_target);
+}
+cert = await client.certificates.wait(cert.id); // CertificateFailedError if it cannot be issued
+
+const exported = await client.certificates.export(cert.id); // needs the delete scope; owners are emailed
+await writeKeyFile(exported.private_key_pem); // non-enumerable: console.log and JSON.stringify leave it out
+```
+
+`certificates.import({ certificate_pem, private_key_pem })` imports one, `reimport` replaces it
+before it expires, `verify` re-checks CNAMEs now, and `revoke` and `delete` retire it. The SDK never
+logs request or response bodies, so an imported key is not logged either. See
+`examples/certificates.ts`.
+
+An appliance load balancer can end TLS with one: `client.loadBalancers.create({ …, protocol:
+"https", certificate_id: cert.id, tls_policy: "modern", redirect_http: true })`; renewals reach it
+by themselves. VPC native load balancers pass TLS through as `tcp`, and a certificate in use cannot
+be revoked or deleted (`CERTIFICATE_IN_USE`).
+
+## Teams and access policies
+
+`client.iam` controls who in your organization may do what. Policies are statements that allow or
+deny actions (`instances:Stop`, `dns:*`, `*:Read`) on resources (`*`, an id, or `name:staging-*`),
+optionally only from some addresses or with MFA; attach them to members or teams. The `iam` helper
+builds statements and checks the API's limits before the call.
+
+```ts
+import { iam } from "@pantechdynamic/sdk";
+
+const team = await client.iam.teams.create({ name: "Platform" });
+const policy = await client.iam.policies.create({
+  name: "staging-operators",
+  statements: [
+    iam.allow(["instances:Read", "instances:Start", "instances:Stop"], ["name:staging-*"], { sourceIp: ["102.89.0.0/16"] }),
+    iam.deny(["*:Delete"]),
+  ],
+});
+await client.iam.policies.attachments.attach(policy.id, { principal_type: "team", principal_id: team.id });
+await client.iam.teams.members.add(team.id, "usr_…");
+
+const sim = await client.iam.simulate({ user_id: "usr_…", action: "instances:Delete", resource: "vm_…" });
+console.log(sim.allowed, sim.decision); // false "explicit_deny"
+```
+
+`iam.policies.update(id, body, { ifMatch: policy.version })` refuses a lost update.
+`iam.actions.list()` is the action catalogue, `iam.effectiveAccess(userId)` what applies to a
+member, `iam.settings` the organization's `member_baseline`, and `iam.MANAGED_POLICY_IDS`
+Pantech's ready-made policies. See `examples/access-policies.ts`.
+
+## Container registry
+
+`client.registry` manages your private registry at `registry.pantechdynamics.com`: one namespace per
+organization, repositories (private by default), their tags, and registry-only tokens for CI and
+clusters. Push and pull with `docker`, logged in with an API key or a registry token.
+
+```ts
+await client.registry.namespace.set({ name: "acme" }); // once; images are registry.pantechdynamics.com/acme/…
+const repo = await client.registry.repositories.create({
+  name: "api/server",
+  immutable_tags: true,
+  retention: { keep_last: 50, keep_pattern: "v*" },
+});
+for await (const tag of client.registry.tags.listAll(repo.id)) console.log(tag.name, tag.digest);
+
+const token = await client.registry.tokens.create({ name: "github-actions", permission: "push", repositories: ["api/server"] });
+await saveToCiSecrets(token.secret); // shown only now (null on a replayed create)
+```
+
+The token's `secret` is non-enumerable: `token.secret` reads it, but `console.log(token)` and
+`JSON.stringify(token)` leave it out. `docker login registry.pantechdynamics.com -u pantech -p
+<secret>` then works for that repository; `registry.tokens.delete(id)` revokes it. See
+`examples/container-registry.ts`.
+
+## DNS and domains
+
+`client.dns` hosts zones on Pantech DNS, Pantech's own name servers; `client.domains` buys,
+transfers in and renews domains, paid from your credit. Each zone gets its own two name servers to
+set at your registrar. Changes go live in the background: a record set is `pending` until it
+answers, usually within a minute, and records added before the zone is `active` (delegated) stay
+`pending` until it is. The first 5 zones are free; `client.dns.zones.quote()` gives the price of the
+rest in your currency.
+
+```ts
+let zone = await client.dns.zones.create({ name: "example.com" });
+zone = await client.dns.zones.wait(zone.id); // until it has its name servers
+console.log(zone.name_servers); // set these at your registrar
+
+const rec = await client.dns.records.create(zone.id, { name: "www", type: "A", values: ["203.0.113.10"] });
+await client.dns.records.wait(zone.id, rec.id); // DNSFailedError if the change fails
+
+// Change it only if nobody else did since you read it (412 PreconditionFailedError otherwise).
+await client.dns.records.update(zone.id, rec.id, { values: ["203.0.113.11"] }, { ifMatch: rec.version });
+
+await client.dns.records.batch(zone.id, {
+  changes: [
+    { action: "create", record: { name: "@", type: "MX", values: ["10 mail.example.com"] } },
+    { action: "delete", record_id: "dnsr_…" },
+  ],
+});
+const zoneFile = await client.dns.zones.exportZoneFile(zone.id); // BIND zone file, as a string
+
+const { data } = await client.domains.search({ query: "example" });
+const result = await client.domains.register({ name: "example.com", contact, accept_terms: true });
+try {
+  await client.domains.orders.wait(result); // OrderFailedError (amount refunded) if it fails
+} catch (err) {
+  if (!(err instanceof PaymentRequiredError)) throw err;
+  // Your credit does not cover it: the order waits for a payment until err.paymentExpiresAt.
+  // In US dollars your saved card is charged the difference; in naira, add credit.
+  if (err.paymentUrl) sendUserTo(err.paymentUrl); // only when the bank asks to confirm the payment
+  await client.domains.orders.wait(result, { waitForPayment: true });
+  // Or, after saving a new card or adding credit: await client.domains.orders.retryPayment(result.order.id);
+}
+```
+
+Prices are before VAT. A TLD whose offer has `privacy_always_on: true` (the `.ng` family) has
+privacy protection that cannot be turned off: asking for `privacy: false` is a `422` naming field
+`privacy` with code `PRIVACY_ALWAYS_ON`. `.ng` contacts need `state` and `postal_code`, and
+`name.ng` registrants must be people (`type: "person"`).
+
+`domains` also has `listTlds`, `checkTransfer`, `update` (auto-renew, transfer lock, privacy),
+`setNameServers`, `getContact`/`updateContact`, `requestAuthCode`/`getAuthCode`,
+`orders.list(domainId)`, `orders.get(orderId)` and `orders.retryPayment(orderId)`. The registrant
+contact is personal data: the SDK never logs requests or responses. See `examples/dns-and-domains.ts`.
+
 ## Errors
 
 Every error is a `PantechError` carrying `status`, `code`, `title`, `detail`, `requestId` and
@@ -145,9 +284,16 @@ try {
 ```
 
 Subclasses: `BadRequestError` (400), `AuthenticationError` (401), `PaymentRequiredError` (402),
-`PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `ValidationError`
-(422), `RateLimitError` (429), `InternalServerError` (5xx), `APIConnectionError` and
-`APITimeoutError` (no answer).
+`PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409),
+`PreconditionFailedError` (412), `ValidationError` (422), `RateLimitError` (429),
+`InternalServerError` (5xx), `APIConnectionError` and `APITimeoutError` (no answer).
+
+DNS and domain codes are typed: `DNSErrorCode` and `DomainErrorCode` are unions of every code those
+endpoints answer with (`DNS_RECORD_EXISTS`, `VERSION_CONFLICT`, `DOMAIN_NOT_AVAILABLE`…), listed at
+runtime in `DNS_ERROR_CODES` and `DOMAIN_ERROR_CODES` (and `RegistryErrorCode`,
+`REGISTRY_ERROR_CODES` for the container registry, `IamErrorCode`, `IAM_ERROR_CODES` for access
+policies, `CertificateErrorCode`, `CERTIFICATE_ERROR_CODES` for certificates), and `isPantechError(err, code)` completes
+them.
 
 ## Retries and idempotency
 
@@ -180,7 +326,8 @@ the timestamp is too old. On Node.js 18, start node with `--experimental-global-
 
 ## Examples
 
-`examples/` has `create-instance.ts`, `list.ts`, `webhook-receiver.ts` and `migrate-from-aws.ts`. With Node.js 23.6+:
+`examples/` has `create-instance.ts`, `list.ts`, `webhook-receiver.ts`, `migrate-from-aws.ts`,
+`dns-and-domains.ts`, `container-registry.ts`, `access-policies.ts` and `certificates.ts`. With Node.js 23.6+:
 `npm run build && PANTECH_API_KEY=PAN_… node examples/list.ts`.
 
 ## Development

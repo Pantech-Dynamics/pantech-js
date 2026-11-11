@@ -2,7 +2,7 @@
 // maps each operationId to a call; the test runs it against a fake fetch and
 // checks it reaches the spec's method and path.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import type { Pantech } from "../src/index.ts";
@@ -11,6 +11,7 @@ import { json, mockClient } from "./helpers.ts";
 type Call = (c: Pantech) => unknown;
 const X = "x_1";
 const Y = "y_2";
+const Z = "z_3";
 const B = {} as never;
 
 const table: Record<string, Call> = {
@@ -200,6 +201,88 @@ const table: Record<string, Call> = {
   deleteMigration: (c) => c.migrate.migrations.delete(X),
   updateMigrationItem: (c) => c.migrate.migrations.updateItem(X, B),
   exportMigrationTerraform: (c) => c.migrate.migrations.exportTerraform(X),
+  // Certificates
+  listCertificates: (c) => c.certificates.list(),
+  requestCertificate: (c) => c.certificates.request(B),
+  importCertificate: (c) => c.certificates.import(B),
+  getCertificate: (c) => c.certificates.get(X),
+  updateCertificate: (c) => c.certificates.update(X, B),
+  deleteCertificate: (c) => c.certificates.delete(X),
+  verifyCertificate: (c) => c.certificates.verify(X),
+  reimportCertificate: (c) => c.certificates.reimport(X, B),
+  exportCertificate: (c) => c.certificates.export(X),
+  revokeCertificate: (c) => c.certificates.revoke(X),
+  // Teams and access policies
+  listIamMembers: (c) => c.iam.members.list(),
+  listIamActions: (c) => c.iam.actions.list(),
+  getIamSettings: (c) => c.iam.settings.get(),
+  updateIamSettings: (c) => c.iam.settings.update(B),
+  listIamTeams: (c) => c.iam.teams.list(),
+  createIamTeam: (c) => c.iam.teams.create(B),
+  getIamTeam: (c) => c.iam.teams.get(X),
+  updateIamTeam: (c) => c.iam.teams.update(X, B),
+  deleteIamTeam: (c) => c.iam.teams.delete(X),
+  listIamTeamMembers: (c) => c.iam.teams.members.list(X),
+  addIamTeamMember: (c) => c.iam.teams.members.add(X, Y),
+  removeIamTeamMember: (c) => c.iam.teams.members.remove(X, Y),
+  listIamPolicies: (c) => c.iam.policies.list(),
+  createIamPolicy: (c) => c.iam.policies.create(B),
+  getIamPolicy: (c) => c.iam.policies.get(X),
+  updateIamPolicy: (c) => c.iam.policies.update(X, B),
+  deleteIamPolicy: (c) => c.iam.policies.delete(X),
+  listIamPolicyAttachments: (c) => c.iam.policies.attachments.list(X),
+  attachIamPolicy: (c) => c.iam.policies.attachments.attach(X, B),
+  detachIamPolicy: (c) => c.iam.policies.attachments.detach(X, Y as "team", Z),
+  getIamEffectiveAccess: (c) => c.iam.effectiveAccess(X),
+  simulateIamAccess: (c) => c.iam.simulate(B),
+  // Container registry
+  getRegistryNamespace: (c) => c.registry.namespace.get(),
+  setRegistryNamespace: (c) => c.registry.namespace.set(B),
+  listRegistryRepositories: (c) => c.registry.repositories.list(),
+  createRegistryRepository: (c) => c.registry.repositories.create(B),
+  getRegistryRepository: (c) => c.registry.repositories.get(X),
+  updateRegistryRepository: (c) => c.registry.repositories.update(X, B),
+  deleteRegistryRepository: (c) => c.registry.repositories.delete(X),
+  listRegistryTags: (c) => c.registry.tags.list(X),
+  getRegistryTag: (c) => c.registry.tags.get(X, Y),
+  deleteRegistryTag: (c) => c.registry.tags.delete(X, Y),
+  listRegistryTokens: (c) => c.registry.tokens.list(),
+  createRegistryToken: (c) => c.registry.tokens.create(B),
+  deleteRegistryToken: (c) => c.registry.tokens.delete(X),
+  // DNS
+  listDNSZones: (c) => c.dns.zones.list(),
+  createDNSZone: (c) => c.dns.zones.create(B),
+  quoteDNSZones: (c) => c.dns.zones.quote(),
+  getDNSZone: (c) => c.dns.zones.get(X),
+  updateDNSZone: (c) => c.dns.zones.update(X, B),
+  deleteDNSZone: (c) => c.dns.zones.delete(X),
+  verifyDNSZone: (c) => c.dns.zones.verify(X),
+  exportDNSZone: (c) => c.dns.zones.exportZoneFile(X),
+  importDNSZone: (c) => c.dns.zones.importZoneFile(X, B),
+  listDNSRecords: (c) => c.dns.records.list(X),
+  createDNSRecord: (c) => c.dns.records.create(X, B),
+  getDNSRecord: (c) => c.dns.records.get(X, Y),
+  updateDNSRecord: (c) => c.dns.records.update(X, Y, B),
+  deleteDNSRecord: (c) => c.dns.records.delete(X, Y),
+  batchDNSRecords: (c) => c.dns.records.batch(X, B),
+  // Domains
+  listDomainTLDs: (c) => c.domains.listTlds(),
+  searchDomains: (c) => c.domains.search({ query: "example" }),
+  checkDomainTransfer: (c) => c.domains.checkTransfer({ name: "example.com" }),
+  listDomains: (c) => c.domains.list(),
+  registerDomain: (c) => c.domains.register(B),
+  transferDomain: (c) => c.domains.transfer(B),
+  getDomain: (c) => c.domains.get(X),
+  updateDomain: (c) => c.domains.update(X, B),
+  setDomainNameServers: (c) => c.domains.setNameServers(X, B),
+  getDomainContact: (c) => c.domains.getContact(X),
+  updateDomainContact: (c) => c.domains.updateContact(X, B),
+  renewDomain: (c) => c.domains.renew(X),
+  requestDomainAuthCode: (c) => c.domains.requestAuthCode(X),
+  getDomainAuthCode: (c) => c.domains.getAuthCode(X),
+  listDomainOrders: (c) => c.domains.orders.list(X),
+  getDomainOrder: (c) => c.domains.orders.get(X),
+  retryDomainOrderPayment: (c) => c.domains.orders.retryPayment(X),
   // Operations
   getOperation: (c) => c.operations.get(X),
   streamOperation: (c) => c.operations.stream(X).next(),
@@ -228,12 +311,37 @@ interface SpecOperation {
   path: string;
 }
 
-function specOperations(): SpecOperation[] {
+type PathItems = Record<string, Record<string, unknown>>;
+
+/**
+ * The vendored spec, plus spec/pending/*.yaml where it lacks a route or
+ * method: the same merge `npm run generate` does.
+ */
+function loadSpec(): { paths: PathItems } {
   const doc = parse(readFileSync(new URL("../spec/public-api.yaml", import.meta.url), "utf8"));
+  const dir = new URL("../spec/pending/", import.meta.url);
+  // spec/pending/ is absent (git keeps no empty folder) while nothing is pending.
+  const files = existsSync(dir) ? readdirSync(dir) : [];
+  for (const file of files.filter((f) => f.endsWith(".yaml"))) {
+    const pending: { paths?: PathItems; "x-pending-replace-until"?: string } = parse(
+      readFileSync(new URL(file, dir), "utf8"),
+    );
+    // A replace file only changes operations the spec already has; their routes stay the same.
+    if (pending["x-pending-replace-until"] !== undefined) continue;
+    for (const [route, item] of Object.entries(pending.paths ?? {})) {
+      doc.paths[route] ??= {};
+      for (const [key, value] of Object.entries(item)) doc.paths[route][key] ??= value;
+    }
+  }
+  return doc;
+}
+
+function specOperations(): SpecOperation[] {
+  const doc = loadSpec();
   const out: SpecOperation[] = [];
-  for (const [path, item] of Object.entries<Record<string, { operationId?: string }>>(doc.paths)) {
+  for (const [path, item] of Object.entries(doc.paths)) {
     for (const method of ["get", "post", "put", "patch", "delete"]) {
-      const op = item[method];
+      const op = item[method] as { operationId?: string } | undefined;
       if (op)
         out.push({
           operationId: op.operationId ?? "",
@@ -245,10 +353,11 @@ function specOperations(): SpecOperation[] {
   return out;
 }
 
-/** The spec path with each `{param}` filled in the order the table's calls use: x_1, then y_2. */
+/** The spec path with each `{param}` filled in the order the table's calls use: x_1, y_2, then z_3. */
 function expectedPath(template: string): string {
+  const ids = [X, Y, Z];
   let n = 0;
-  return `/public/v1${template.replace(/\{[^}]+\}/g, () => (n++ === 0 ? X : Y))}`;
+  return `/public/v1${template.replace(/\{[^}]+\}/g, () => ids[n++] ?? Z)}`;
 }
 
 const sse = 'event: operation\ndata: {"id":"x_1","status":"succeeded"}\n\n';
