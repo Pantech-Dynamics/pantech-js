@@ -8133,8 +8133,8 @@ export interface components {
       /**
        * @description The zone's own two Pantech DNS name servers, to delegate to at your registrar: set exactly these, no more and no fewer. Every zone gets its own pair, never the one the domain is delegated to when the zone is created, so a stale delegation can never serve someone else's zone. Empty while `pending`.
        * @example [
-       *       "ana.ns.pantechdynamics.com",
-       *       "ayo.ns.pantechdynamics.com"
+       *       "ana-ns.pantechdynamics.com",
+       *       "ayo-ns.pantechdynamics.com"
        *     ]
        */
       name_servers: string[];
@@ -8465,8 +8465,8 @@ export interface components {
       name_server_mode: "pantech" | "custom";
       /**
        * @example [
-       *       "ana.ns.pantechdynamics.com",
-       *       "ayo.ns.pantechdynamics.com"
+       *       "ana-ns.pantechdynamics.com",
+       *       "ayo-ns.pantechdynamics.com"
        *     ]
        */
       name_servers: string[];
