@@ -50,7 +50,9 @@ try {
       console.log(`  ${result.name.padEnd(40)} ${result.status.padEnd(12)} ${price}`);
     }
     // To buy one: client.domains.register({ name, contact, accept_terms: true }),
-    // then client.domains.orders.wait(result). It is paid from your credit.
+    // then client.domains.orders.wait(result). It is paid from your credit. Send
+    // accept_terms only once the registrant has accepted the Domain Registration
+    // Agreement: https://pantechdynamics.com/legal/domain-registration
   }
 } catch (err) {
   if (err instanceof DNSFailedError) {

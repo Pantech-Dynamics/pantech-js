@@ -8598,7 +8598,7 @@ export interface components {
       auto_renew?: boolean;
       /** @description Defaults to true. */
       privacy?: boolean;
-      /** @description Must be true: the registrant accepted the registration agreement. */
+      /** @description Must be true: the registrant accepted the [Domain Registration Agreement](https://pantechdynamics.com/legal/domain-registration). */
       accept_terms: boolean;
     };
     TransferDomainRequest: {
@@ -8612,6 +8612,7 @@ export interface components {
       auto_renew?: boolean;
       /** @description Defaults to true. */
       privacy?: boolean;
+      /** @description Must be true: the registrant accepted the [Domain Registration Agreement](https://pantechdynamics.com/legal/domain-registration). */
       accept_terms: boolean;
     };
     UpdateDomainRequest: {
@@ -12910,7 +12911,7 @@ export interface operations {
        *     `name` `REQUIRED`, `INVALID_NAME` or `INVALID_DOMAIN_NAME`: send one label and a TLD Pantech sells, such as `example.com`. Internationalised names are accepted and sent in punycode.
        *     `years` `INVALID_YEARS`: send 1 to 10; some endings (the `.ng` family among them) take at most 5 years per order for organizations billed in naira.
        *     `contact.<field>` `INVALID_CONTACT`: that contact field is missing or invalid; `message` says why. Required: `first_name`, `last_name`, `email`, `phone` (`+CC.NUMBER`), `address_line1`, `city`, `country_code`, and `organization_name` for a `company`.
-       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the registration agreement.
+       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the [Domain Registration Agreement](https://pantechdynamics.com/legal/domain-registration).
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
        */
       422: {
@@ -13208,7 +13209,7 @@ export interface operations {
        *     `name` `REQUIRED`, `INVALID_NAME` or `INVALID_DOMAIN_NAME`: send one label and a TLD Pantech sells, such as `example.com`. Internationalised names are accepted and sent in punycode.
        *     `years` `INVALID_YEARS`: send 1 to 10; some endings (the `.ng` family among them) take at most 5 years per order for organizations billed in naira.
        *     `contact.<field>` `INVALID_CONTACT`: that contact field is missing or invalid; `message` says why. Required: `first_name`, `last_name`, `email`, `phone` (`+CC.NUMBER`), `address_line1`, `city`, `country_code`, and `organization_name` for a `company`.
-       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the registration agreement.
+       *     `accept_terms` `TERMS_NOT_ACCEPTED`: send `true` once the registrant has accepted the [Domain Registration Agreement](https://pantechdynamics.com/legal/domain-registration).
        *     `auth_code` `REQUIRED` or `INVALID_AUTH_CODE`: send the code from the current registrar, 1 to 1024 printable characters.
        *     `UNKNOWN_FIELD`: the body has a field this endpoint does not take (named in `field`). Remove it or fix its spelling.
        */
