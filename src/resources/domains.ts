@@ -65,14 +65,19 @@ export class Domains extends APIResource {
 
   /**
    * Buys the domain for `years` (1 to 10), paid from your credit first; a
-   * failed order is refunded. `accept_terms` must be true. Follow the order
-   * with `orders.wait(result)`.
+   * failed order is refunded. `accept_terms` must be true: the registrant has
+   * accepted the Domain Registration Agreement
+   * (https://pantechdynamics.com/legal/domain-registration). Follow the order with
+   * `orders.wait(result)`.
    */
   register(body: B<"registerDomain">, options?: RequestOptions): Promise<R<"registerDomain">> {
     return this._post("/domains", body, options);
   }
 
-  /** Moves a domain to Pantech with its auth code, adding `years` to its term. Follow it with `orders.wait`. */
+  /**
+   * Moves a domain to Pantech with its auth code, adding `years` to its term.
+   * `accept_terms` must be true, as for `register`. Follow it with `orders.wait`.
+   */
   transfer(body: B<"transferDomain">, options?: RequestOptions): Promise<R<"transferDomain">> {
     return this._post("/domains/transfers", body, options);
   }

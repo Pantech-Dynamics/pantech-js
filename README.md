@@ -259,7 +259,9 @@ try {
 Prices are before VAT. A TLD whose offer has `privacy_always_on: true` (the `.ng` family) has
 privacy protection that cannot be turned off: asking for `privacy: false` is a `422` naming field
 `privacy` with code `PRIVACY_ALWAYS_ON`. `.ng` contacts need `state` and `postal_code`, and
-`name.ng` registrants must be people (`type: "person"`).
+`name.ng` registrants must be people (`type: "person"`). Send `accept_terms: true` only once the
+registrant has read and accepted the
+[Domain Registration Agreement](https://pantechdynamics.com/legal/domain-registration).
 
 `domains` also has `listTlds`, `checkTransfer`, `update` (auto-renew, transfer lock, privacy),
 `setNameServers`, `getContact`/`updateContact`, `requestAuthCode`/`getAuthCode`,
