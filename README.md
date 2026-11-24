@@ -77,7 +77,7 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 | Databases | `databases.*`, `databases.snapshots.*`, `databaseOrders.wait(order)` |
 | SSH keys, webhooks | `sshKeys.*`, `webhooks.*`, `webhooks.deliveries.*` |
 | Billing and usage | `billing.credit.get()`, `billing.credit.purchases.create(...)`, `billing.receipts.getPdf(id)`, `usage.get()` |
-| Move from another cloud | `migrate.connections.*`, `migrate.scans.*`, `migrate.migrations.*` |
+| Move from another cloud | `migrate.providers.list()`, `migrate.connections.*` (`enrollAgent`, `revokeAgent`), `migrate.scans.*`, `migrate.migrations.*` (`sendInvites`), `migrate.copyAccess.get/set`, `migrate.bucketImports.*`, `migrate.serverCopies.*`, `migrate.databaseImports.*`, `migrate.kubernetesMoves.*` |
 | DNS | `dns.zones.*` (`exportZoneFile`, `importZoneFile`, `verify`, `wait`), `dns.records.*` (`batch`, `wait`) |
 | Certificates | `certificates.request/import/get/list/update/verify/reimport/export/revoke/delete`, `certificates.wait(id)` |
 | Teams and access policies | `iam.members.list()`, `iam.actions.list()`, `iam.settings.*`, `iam.teams.*`, `iam.teams.members.*`, `iam.policies.*`, `iam.policies.attachments.*`, `iam.effectiveAccess(userId)`, `iam.simulate({...})` |
@@ -182,9 +182,12 @@ await client.buckets.multipart.complete(bucket.id, {
 
 ## Move from another cloud
 
-`client.migrate` connects an AWS account through a read-only role that only Pantech can assume (no
-access keys are shared), scans what runs there, and plans the move with a price comparison and a
-Terraform export. Nothing is created on Pantech until you apply the Terraform.
+`client.migrate` connects another cloud read-only, scans what runs there, and plans the move with a
+price comparison and a Terraform export. Nothing is created on Pantech until you apply the
+Terraform or start a copy. `migrate.providers.list()` names every cloud it can read and how:
+AWS, Google Cloud, Azure and Huawei Cloud are `federated` (Pantech signs short-lived tokens your
+cloud trusts, so no keys are shared); DigitalOcean, Hetzner, Linode, Vultr, Contabo and OpenStack
+are read by the Pantech Migrate `agent`, which keeps your read-only token on your machine.
 
 ```ts
 let conn = await client.migrate.connections.create({ name: "Production AWS" });
@@ -200,6 +203,65 @@ const { files } = await client.migrate.migrations.exportTerraform(plan.id); // m
 
 `migrate.migrations.updateItem(id, { key, excluded: true })` leaves an item out, or changes its
 plan, size, address range or role, before you export. See `examples/migrate-from-aws.ts`.
+
+Other clouds connect the same way. For Google Cloud, Azure and Huawei Cloud, run the script in
+`conn.setup.template` and send what it prints with `update`; for an agent provider, enroll the
+agent where it will run:
+
+```ts
+const gcp = await client.migrate.connections.create({ provider: "gcp", name: "Production GCP" });
+await client.migrate.connections.update(gcp.id, {
+  gcp: { project_number: "…", pool_id: "…", provider_id: "…", service_account_email: "…", project_ids: ["…"] },
+});
+
+const hetzner = await client.migrate.connections.create({ provider: "hetzner", name: "Hetzner" });
+const { enroll_command } = await client.migrate.connections.enrollAgent(hetzner.id); // shown once
+await client.migrate.connections.wait(hetzner.id); // connected once the agent has enrolled
+```
+
+`enrollAgent` is sent once and never retried, since each call issues a new code;
+`revokeAgent(id)` ends the agent at once. A plan lists the people it found as items of kind
+`user`; `migrate.migrations.sendInvites(planId, { keys })` invites them with their roles, and is
+safe to repeat.
+
+Then move the data across. Each copy is free; what it creates bills as usual.
+
+```ts
+// Buckets: choose them, deploy the copy role, then import.
+await client.migrate.copyAccess.set(conn.id, { buckets: ["assets"] }); // returns the copy role template
+await client.migrate.copyAccess.set(conn.id, { role_arn: "arn:aws:iam::…:role/…" }); // CopyRoleArn output
+const imp = await client.migrate.bucketImports.start({
+  connection_id: conn.id,
+  source_bucket: "assets",
+  destination_bucket_name: "assets",
+});
+await client.migrate.bucketImports.resync(imp.id); // copies only what changed
+
+// Servers: copy the disks, copy what changed, then cut over to a new instance.
+const copy = await client.migrate.serverCopies.start(plan.id, { item_key: "…", subnet_id: "…" });
+await client.migrate.serverCopies.sync(copy.id);
+await client.migrate.serverCopies.cutOver(copy.id); // stop the application first
+
+// Databases, through the Migrate agent: the source's credentials stay on it.
+const dbi = await client.migrate.databaseImports.start(plan.id, {
+  item_key: "…",
+  destination_database_id: "…",
+  source_ref: "prod-db",
+  mode: "replicate",
+});
+await client.migrate.databaseImports.cutOver(dbi.id); // stop writes to the source first
+
+// Kubernetes: preview, apply, then cut over.
+const move = await client.migrate.kubernetesMoves.start(plan.id, { item_key: "…", cluster_id: "…" });
+await client.migrate.kubernetesMoves.preview(move.id);
+await client.migrate.kubernetesMoves.apply(move.id);
+await client.migrate.kubernetesMoves.cutOver(move.id, { source_writes_stopped: true });
+const manifests = await client.migrate.kubernetesMoves.downloadManifests(move.id); // YAML, for GitOps
+```
+
+Each step is asynchronous: follow it with `get` (`bucketImports.get`, `serverCopies.get`,
+`databaseImports.get`, `kubernetesMoves.get`) until its `status` says it is ready for the next.
+Windows servers are copied with the agent only, once Windows is enabled for your organization.
 
 ## Certificates
 
