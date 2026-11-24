@@ -4852,6 +4852,752 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/cloud-providers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the clouds Migrate can read
+     * @description Every cloud Pantech Migrate can connect, how it reads each (`federated`: Pantech signs short-lived tokens your cloud trusts; `agent`: you run the Pantech Migrate agent, which keeps your read-only token on your machine), and whether a scan reads its spend and its people.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listCloudProviders"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/cloud-connections/{connection_id}/agent-enrollments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enroll a Migrate agent
+     * @description For a connection read by the Pantech Migrate agent: a one-time enrollment code, shown only in this response, valid once for an hour. Run `enroll_command` where the agent will run. Issuing a code replaces any unused one; redeeming it replaces the connection's earlier agent. Owners and admins only.
+     *
+     *     **Idempotency:** not replayed: each call issues a new code.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createCloudAgentEnrollment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/cloud-connections/{connection_id}/agent": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke a connection's agent
+     * @description Ends the connection's Migrate agent at once: its credential stops working on its next request. The connection waits for a new agent. Like disconnecting, this only takes access away. Owners and admins only.
+     *
+     *     **Idempotency:** revoking again changes nothing.
+     *
+     *     **Scope:** `write`.
+     */
+    delete: operations["revokeCloudAgent"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/invites": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Invite a plan's people
+     * @description Sends Pantech invites to the people a plan lists (items of kind `user`), by key, with each item's role, through the organization's ordinary invite flow: the same email, rules and audit as inviting from Members. An admin can invite members only; a person suggested as admin comes back `role_not_allowed`. Owners and admins only.
+     *
+     *     **Idempotency:** safe to repeat: a person already invited from this plan, already holding a pending invite, or already a member is reported and never invited twice.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["sendMigrationInvites"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/cloud-connections/{connection_id}/copy-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get copy access
+     * @description The connection's opt-in copy access: the buckets chosen for copying, the copy role and what its last verification found, and the CloudFormation template for that role. `status` is `not_requested` until buckets are chosen. The copy role is separate from the connection's read-only role and may read only the chosen buckets' objects.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getCopyAccess"];
+    /**
+     * Set copy access
+     * @description Chooses the buckets Pantech may copy (`buckets`, needed the first time; at most 50) and returns the CloudFormation template for a copy role that may read only those buckets. Create a stack from it (or update the stack when the list changes), then set `role_arn` to its `CopyRoleArn` output; Pantech then verifies the role against each bucket without reading any object. `retry: true` verifies again. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    put: operations["putCopyAccess"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/bucket-imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List bucket imports
+     * @description The organization's bucket imports, newest first.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listBucketImports"];
+    put?: never;
+    /**
+     * Copy a bucket into Pantech
+     * @description Copies one source bucket's objects into a Pantech bucket: a new one (`destination_bucket_name`, made now and billed as any bucket) or one the organization has (`destination_bucket_id`). The bucket must have verified copy access. Objects stream from the source, are checked against their MD5s, and keep their content type, cache control, content disposition, user metadata and tags; only current versions are copied and nothing is deleted on either side. Follow it with `GET /public/v1/bucket-imports/{import_id}`. Moving is free; stored data bills as usual. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["startBucketImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/bucket-imports/{import_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a bucket import
+     * @description An import's status and progress for its current pass, the first 100 objects that failed it with the reason, and its audit trail (who started, resynced and cancelled it, and how each pass ended).
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getBucketImport"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/bucket-imports/{import_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel a bucket import
+     * @description Stops the import: a queued one at once, a running one at its next checkpoint. Uploads in flight are abandoned; objects already copied stay. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cancelBucketImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/bucket-imports/{import_id}/resync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resync a bucket import
+     * @description Queues another pass over the source. Objects Pantech already holds unchanged are skipped, so it copies only what changed. Run a last resync after writes to the source stop, then switch over. `mirror_deletes: true` (off by default, for that pass only) also deletes the objects this import copied that the source no longer has; it never deletes an object the import did not write, needs the `delete` scope, and is recorded in the import's audit trail. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["resyncBucketImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/server-copies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Copy a server
+     * @description Starts copying one planned server's disks into a new Pantech instance in your organization, with the item's plan (or `plan_slug`), the subnet and security group you name, and optionally an SSH key. Nothing is created yet: the first pass copies every disk, `POST /public/v1/server-copies/{copy_id}/sync` copies what changed since, and `POST /public/v1/server-copies/{copy_id}/cutover` runs the last pass after you stop the application, then builds the instance through the normal create path, so it is billed, paid for and limited like any new instance. The copy itself is free.
+     *
+     *     With `source` `agent` (the default) the Pantech Migrate agent on the server checks it and sends its disks over HTTPS. With `aws_snapshot` Pantech reads EBS snapshots keylessly with a separate copy role: get its stack from `GET /public/v1/migrations/{migration_id}/server-copy-template`, deploy it, and pass its `CopyRoleArn`. Windows servers are copied with the agent only, and need Windows enabled for your organization. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["startServerCopy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/server-copy-template": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the AWS copy role template
+     * @description The CloudFormation template of the AWS copy role for one planned server: it may read only snapshots tagged `pantech-migrate-connection` with this connection's id, and, with `create_snapshots=true`, also snapshot that server's own volumes and delete the snapshots it made. Deploy it after the connect stack; the discover role is never changed.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getServerCopyTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/server-copies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List server copies
+     * @description Every server copy in your organization, newest first, with its progress.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listServerCopies"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/server-copies/{copy_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a server copy
+     * @description One server copy: its status, the pre-flight's findings, the running pass and its progress (chunks, bytes and an estimate of the time left), and the instance once it is being created.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getServerCopy"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/server-copies/{copy_id}/sync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Copy what changed
+     * @description Asks for another pass that copies only what changed since the last one. For a copy from AWS snapshots that makes none itself, name each disk's new snapshot in `snapshots`. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["syncServerCopy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/server-copies/{copy_id}/cutover": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cut over
+     * @description Asks for the last pass. Stop the application first: the agent flushes and freezes what it can, then copies the last changes, and Pantech builds the instance. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cutOverServerCopy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/server-copies/{copy_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel a server copy
+     * @description Stops the copy and deletes everything Pantech staged for it. Refused once the instance is being created: it is yours then, delete it as any instance. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cancelServerCopy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/database-imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import a database from a plan
+     * @description Starts moving one of the plan's databases into one of your Pantech databases, through the Migrate agent running in your network. The agent reads the source with credentials that stay on it; Pantech never receives them. It checks the source against the destination first (versions, extensions, size, primary keys, replication settings) and reports what to fix. `dump` copies once: stop writes to the source first. `replicate` (PostgreSQL) keeps following changes until you cut over. The move is free; the destination bills as usual. At most 3 imports in progress per organization and one per database. Owners and admins only, who must also be allowed to change the destination database.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["startDatabaseImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List database imports
+     * @description Your organization's database imports, newest first, without their tables.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listDatabaseImports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports/{import_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a database import
+     * @description An import with its readiness report, per-table progress and verification, and what the destination reported about itself. Values that were not measured are null.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getDatabaseImport"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports/{import_id}/readiness": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check readiness again
+     * @description Asks the agent to run the pre-flight again, for example after fixing what it reported. Allowed before the copy starts.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["checkDatabaseImportReadiness"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports/{import_id}/cutover": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cut over or finish an import
+     * @description Finishes the import. For `dump`, once every table is copied: the agent sets sequences and verifies every table. For `replicate`, stop writes to the source first: the agent applies the remaining changes until there is no lag, verifies, then the import login is removed and the replication slot dropped.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cutOverDatabaseImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports/{import_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel an import
+     * @description Stops the import and removes its access to your Pantech database. What was already copied stays. The agent drops its replication slot and publication on the source.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cancelDatabaseImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/database-imports/{import_id}/revoke-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remove an import's access
+     * @description Removes the import login and its loopback-only access from your Pantech database now and keeps the data. An import still copying stops.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["revokeDatabaseImportAccess"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/migrations/{migration_id}/kubernetes-moves": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a Kubernetes move
+     * @description Starts moving a plan's `kubernetes_cluster` item into one of your running Pantech clusters (docs: Migrate > Kubernetes). The Pantech Migrate agent exports the source cluster with the read-only access from `GET /kubernetes-moves/source-access`; the source credential never leaves the agent. Secrets move only with `include_secrets`, volume data only with `copy_volumes`. The move is free; the cluster bills as usual. At most 5 active moves per organization and one per cluster. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["startKubernetesMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Kubernetes moves
+     * @description Your organization's moves, newest first, without their resources and volumes.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listKubernetesMoves"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/source-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Source cluster access manifests
+     * @description The manifests to apply to the source cluster: a read-only reader (get, list, watch; no Secrets), an optional Secrets reader, and an optional copier role for copying volumes.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getKubernetesMoveSourceAccess"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a Kubernetes move
+     * @description A move with its report: every source object and what the move does with it (names only, never values), the volumes and their copy progress, the images and the workloads held until the cutover.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["getKubernetesMove"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview a Kubernetes move
+     * @description Queues a server-side dry run of every object against the target cluster. The move's namespaces are created (empty, with the cluster policy's labels) so objects inside them can be checked; nothing else is created. `allow_privileged` names workloads the cluster policy refused that you choose to include anyway. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["previewKubernetesMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a Kubernetes move
+     * @description Queues the apply of what the last successful preview checked, in order: definitions, namespaces, identities, configuration, storage, services, workloads, routing. Workloads that mount a copied volume start scaled down until the cutover. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["applyKubernetesMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/sync-volumes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Copy volumes again
+     * @description Queues the next copy of every volume. Only what changed since the last copy is sent; each copy is verified by reading it back. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["syncKubernetesMoveVolumes"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/cutover": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cut over a Kubernetes move
+     * @description Once writes on the source have stopped (`source_writes_stopped: true`), takes the final copy of every volume, then scales the held workloads up to their source replicas. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cutoverKubernetesMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel a Kubernetes move
+     * @description Stops the move, removes its copy pods on both clusters, its staged data and its export. Objects already applied to your Pantech cluster stay. Owners and admins only.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["cancelKubernetesMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/kubernetes-moves/{move_id}/manifests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download the moved manifests
+     * @description The transformed manifests as one YAML file, for GitOps. Secret values are never included: the file lists the Secrets the move carries by name.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["downloadKubernetesMoveManifests"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/object-storage": {
     parameters: {
       query?: never;
@@ -8534,37 +9280,77 @@ export interface components {
     /** @description Why the last check or scan failed; null when it didn't. */
     CloudFailure: {
       /** @enum {string} */
-      code: "assume_role_denied" | "permission_missing" | "provider_unavailable" | "scan_too_large" | "internal";
+      code:
+        | "assume_role_denied"
+        | "permission_missing"
+        | "provider_unavailable"
+        | "scan_too_large"
+        | "internal"
+        | "agent_offline"
+        | "token_rejected"
+        | "invalid_upload";
       /** @description What to do about it. */
       message: string;
     } | null;
-    /** @description What you need to create the role in your account. */
+    /** @description What you run in your own cloud to connect it. Every setup grants read-only access, listed one permission at a time in `permissions`; none creates a key Pantech holds. */
     CloudConnectionSetup: {
-      /** @description Pantech's identity provider URL, which your role trusts. */
-      issuer_url: string;
-      /** @description The audience every token carries. */
-      audience: string;
-      /** @description The subject your role requires: this connection's id. */
+      /**
+       * @description `federated`: Pantech reads your cloud with 5-minute tokens it signs for this connection only (AWS, Google Cloud, Azure, Huawei Cloud). `agent`: you run the Pantech Migrate agent, which keeps your read-only token on your machine.
+       * @enum {string}
+       */
+      access: "federated" | "agent";
+      /** @description Pantech's identity provider URL, which your cloud trusts; null for agent providers. */
+      issuer_url: string | null;
+      /** @description The audience every token carries; null for agent providers. */
+      audience: string | null;
+      /** @description The subject your trust policy requires: this connection's id. */
       subject: string;
       /** @description Opens AWS's create-stack page with this template and connection filled in; null when not offered. */
       quick_create_url: string | null;
-      /** @description A CloudFormation template (JSON) for this connection: a read-only role and, unless one exists, the identity provider. */
+      /** @description The main setup file: AWS's CloudFormation template (JSON), Google Cloud's gcloud script, Azure's Azure CLI script, Huawei Cloud's steps, or, for agent providers, how to make a read-only token. */
       template: string;
+      /** @enum {string} */
+      template_format: "cloudformation" | "shell" | "markdown" | "agent";
+      /** @description Further setup files, such as a Terraform version of the setup or JSON documents to paste. */
+      files: {
+        name: string;
+        content: string;
+      }[];
+      /** @description Every read-only permission the setup grants. */
+      permissions: string[];
+      agent: components["schemas"]["CloudAgentSetup"];
     };
     CloudConnection: {
       /** @example ccn_06gk3x9tq7m2v8r4y1c5d0zp8w */
       id: string;
       /** @enum {string} */
-      provider: "aws";
+      provider:
+        | "aws"
+        | "gcp"
+        | "azure"
+        | "huawei"
+        | "digitalocean"
+        | "hetzner"
+        | "linode"
+        | "vultr"
+        | "contabo"
+        | "openstack";
       name: string;
       /**
-       * @description `awaiting_role`, `verifying`, `connected` or `failed`.
+       * @description `awaiting_role` (federated providers: waiting for what the setup printed), `awaiting_agent` (agent providers: no agent enrolled), `verifying`, `connected` or `failed`.
        * @enum {string}
        */
-      status: "awaiting_role" | "verifying" | "connected" | "failed";
+      status: "awaiting_role" | "awaiting_agent" | "verifying" | "connected" | "failed";
       failure: components["schemas"]["CloudFailure"];
       role_arn: string | null;
+      /** @description Set for AWS connections only; see external_account_id. */
       aws_account_id: string | null;
+      /** @description The source account: an AWS account, a Google Cloud pool's project number, an Azure tenant, or what the agent reported. */
+      external_account_id: string | null;
+      gcp: components["schemas"]["CloudGCPFederation"];
+      azure: components["schemas"]["CloudAzureFederation"];
+      huawei: components["schemas"]["CloudHuaweiFederation"];
+      agent: components["schemas"]["CloudAgentStatus"];
       /** Format: date-time */
       verified_at: string | null;
       /** Format: date-time */
@@ -8580,18 +9366,31 @@ export interface components {
     };
     CreateCloudConnectionRequest: {
       /**
-       * @description `aws`, the default.
+       * @description `aws`, the default, or another provider `GET /cloud-providers` lists.
        * @enum {string}
        */
-      provider?: "aws";
+      provider?:
+        | "aws"
+        | "gcp"
+        | "azure"
+        | "huawei"
+        | "digitalocean"
+        | "hetzner"
+        | "linode"
+        | "vultr"
+        | "contabo"
+        | "openstack";
       /** @description 1 to 100 characters, for example `Production AWS`. */
       name: string;
     };
     UpdateCloudConnectionRequest: {
       name?: string;
-      /** @description The stack's RoleArn output. */
+      /** @description AWS: the stack's RoleArn output. */
       role_arn?: string;
-      /** @description Check the role again. */
+      gcp?: components["schemas"]["CloudGCPFederation"];
+      azure?: components["schemas"]["CloudAzureFederation"];
+      huawei?: components["schemas"]["CloudHuaweiFederation"];
+      /** @description Check the connection again. */
       retry?: boolean;
     };
     CloudScanCounts: {
@@ -8606,6 +9405,7 @@ export interface components {
       buckets: number;
       users: number;
       ssh_keys: number;
+      kubernetes_clusters: number;
     } | null;
     CloudCostMonth: {
       /** @description YYYY-MM. */
@@ -8623,6 +9423,11 @@ export interface components {
       /** @example csn_06gk3x9tq7m2v8r4y1c5d0zp8w */
       id: string;
       connection_id: string;
+      /**
+       * @description `worker` (Pantech read your cloud) or `agent` (your agent did).
+       * @enum {string}
+       */
+      runner: "worker" | "agent";
       /** @enum {string} */
       status: "queued" | "running" | "succeeded" | "failed";
       failure: components["schemas"]["CloudFailure"];
@@ -8632,7 +9437,9 @@ export interface components {
       started_at: string | null;
       /** Format: date-time */
       finished_at: string | null;
+      provider: string | null;
       aws_account_id: string | null;
+      external_account_id: string | null;
       /** @description Regions read. */
       regions: string[];
       counts: components["schemas"]["CloudScanCounts"];
@@ -8665,6 +9472,7 @@ export interface components {
         memory_mib: number | null;
         architecture: string;
         platform: string;
+        os_name: string | null;
         volume_ids: string[];
         network_id: string | null;
         subnet_id: string | null;
@@ -8753,9 +9561,16 @@ export interface components {
         created_at: string | null;
       }[];
       users: {
+        id: string | null;
         name: string;
         email: string | null;
         is_admin: boolean;
+        /** @description Where the person came from: `iam_user`, `identity_center`, `gcp_iam`, `entra`, `team`. */
+        source: string | null;
+        /** @enum {string|null} */
+        access_level: "admin" | "write" | "read" | null;
+        /** @description The source cloud's own role names. */
+        roles: string[];
         /** Format: date-time */
         created_at: string | null;
       }[];
@@ -8765,6 +9580,7 @@ export interface components {
         fingerprint: string | null;
         public_key: string | null;
       }[];
+      kubernetes_clusters: components["schemas"]["CloudKubernetesCluster"][];
     } | null;
     MigrationFlag: {
       code: string;
@@ -8797,6 +9613,14 @@ export interface components {
       email: string | null;
       public_key: string | null;
       listeners: components["schemas"]["MigrationListener"][];
+      /** @description The image a server is planned on when its operating system decides it (Windows Server). */
+      image_slug: string | null;
+      /** @description The Pantech invite sent to this person from this plan. */
+      invite_id: string | null;
+      /** Format: date-time */
+      invited_at: string | null;
+      bucket: components["schemas"]["MigrationBucketTarget"];
+      kubernetes: components["schemas"]["MigrationKubernetesTarget"];
     };
     MigrationItemSource: {
       id: string;
@@ -8822,7 +9646,8 @@ export interface components {
         | "database"
         | "ssh_key"
         | "user"
-        | "bucket";
+        | "bucket"
+        | "kubernetes_cluster";
       source: components["schemas"]["MigrationItemSource"];
       /** @enum {string} */
       status: "planned" | "excluded" | "unsupported";
@@ -8903,6 +9728,8 @@ export interface components {
       /** @enum {string} */
       role?: "member" | "admin";
       email?: string;
+      /** @description On a kubernetes_cluster item: consent to a lower Kubernetes version than the source runs. */
+      allow_version_downgrade?: boolean;
     };
     MigrationTerraform: {
       files: {
@@ -9947,6 +10774,788 @@ export interface components {
       degraded: boolean;
       /** Format: date-time */
       occurred_at: string;
+    };
+    /** @description How to run the Pantech Migrate agent; null for federated providers. */
+    CloudAgentSetup: {
+      /** @description The agent's container image. */
+      image: string;
+      /** @description Where the agent's binaries are published. */
+      download_url: string | null;
+      api_url: string;
+      /** @description The environment variables the agent reads your read-only credential from, on your machine. It is never sent to Pantech. */
+      token_variables: string[];
+      token_how_to: string;
+      /** @description Contains `<ENROLLMENT_CODE>` where the one-time code goes. */
+      enroll_command: string;
+      run_command: string;
+      container_command: string;
+    } | null;
+    /** @description The connection's enrolled agent; null when none is. */
+    CloudAgentStatus: {
+      id: string;
+      /** @description Whether it polled in the last 2 minutes. */
+      online: boolean;
+      agent_version: string;
+      platform: string;
+      /** Format: date-time */
+      enrolled_at: string;
+      /** Format: date-time */
+      last_seen_at: string;
+      /** Format: date-time */
+      credential_expires_at: string;
+    } | null;
+    /** @description What the Google Cloud setup printed. */
+    CloudGCPFederation: {
+      project_number: string;
+      pool_id: string;
+      provider_id: string;
+      service_account_email: string;
+      /** @description The projects to scan, 1 to 20. */
+      project_ids: string[];
+    } | null;
+    /** @description What the Azure setup printed. */
+    CloudAzureFederation: {
+      tenant_id: string;
+      /** @description The app registration's application (client) ID. */
+      client_id: string;
+      /** @description The subscriptions to scan, 1 to 20. */
+      subscription_ids: string[];
+    } | null;
+    /** @description Your Huawei Cloud identity provider and the projects to scan. */
+    CloudHuaweiFederation: {
+      identity_provider_id: string;
+      /** @description 1 to 20 region projects. */
+      projects: {
+        region: string;
+        id: string;
+      }[];
+    } | null;
+    CloudProvider: {
+      /** @enum {string} */
+      slug:
+        | "aws"
+        | "gcp"
+        | "azure"
+        | "huawei"
+        | "digitalocean"
+        | "hetzner"
+        | "linode"
+        | "vultr"
+        | "contabo"
+        | "openstack";
+      name: string;
+      /** @enum {string} */
+      access: "federated" | "agent";
+      /** @description Whether a scan reads the source's spend. When false the comparison says the spend is not available. */
+      cost_readable: boolean;
+      /** @description Whether a scan lists the people with access. When false, add them to the plan by hand. */
+      people_readable: boolean;
+      /** @description Whether this deployment can connect it now. */
+      available: boolean;
+    };
+    CloudAgentEnrollment: {
+      /** @description The one-time enrollment code, shown only now. It works once, for an hour. */
+      code: string;
+      /** Format: date-time */
+      expires_at: string;
+      enroll_command: string;
+    };
+    SendMigrationInvitesRequest: {
+      /** @description The `user` items to invite, by key: 1 to 50. */
+      keys: string[];
+    };
+    MigrationInviteResult: {
+      key: string;
+      email: string | null;
+      role: string | null;
+      /**
+       * @description `invited`; `already_invited` (from this plan or by hand); `already_member`; `role_not_allowed` (an admin can't invite an admin: change the person's role to member or ask an owner); `skipped` (see reason); `failed` (try again).
+       * @enum {string}
+       */
+      outcome: "invited" | "already_invited" | "already_member" | "role_not_allowed" | "skipped" | "failed";
+      /** @description Why a person was skipped: `email_missing`, `excluded`, `not_a_person`, `unknown_item`. */
+      reason: string | null;
+      invite_id: string | null;
+    };
+    MigrationInvites: {
+      results: components["schemas"]["MigrationInviteResult"][];
+      migration: components["schemas"]["Migration"];
+    };
+    CloudProviderList: {
+      data: components["schemas"]["CloudProvider"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    /** @description Why it failed; null when it didn't. `message` says what to do. */
+    BucketImportFailure: {
+      code: string;
+      message: string;
+    } | null;
+    CopyAccessRequest: {
+      /** @description The source buckets Pantech may copy, 1 to 50, each once. Required the first time. */
+      buckets?: string[];
+      /** @description The copy stack's `CopyRoleArn` output. Setting it queues a verification. */
+      role_arn?: string;
+      /** @description Verify the role again. */
+      retry?: boolean;
+    };
+    CopyAccessBucket: {
+      name: string;
+      region: string | null;
+      /** @enum {string|null} */
+      versioning: "enabled" | "suspended" | "off" | null;
+      /** @description Verified: an import may copy this bucket. */
+      ready: boolean;
+      failure: components["schemas"]["BucketImportFailure"];
+    };
+    CopyAccessSetup: {
+      issuer_url: string;
+      audience: string;
+      /** @description The copy role's token subject: the connection id followed by `:copy`. */
+      subject: string;
+      /** @description The CloudFormation template (JSON text) for a role that may read only the chosen buckets; null until buckets are chosen. */
+      template: string | null;
+    };
+    CopyAccess: {
+      connection_id: string;
+      /** @enum {string} */
+      status: "not_requested" | "awaiting_role" | "verifying" | "verified" | "failed";
+      failure: components["schemas"]["BucketImportFailure"];
+      role_arn: string | null;
+      buckets: components["schemas"]["CopyAccessBucket"][];
+      /** Format: date-time */
+      verified_at: string | null;
+      setup: components["schemas"]["CopyAccessSetup"];
+    };
+    ResyncBucketImportRequest: {
+      /** @description Off unless set. After this pass has listed the whole source, delete the objects this import copied that the source no longer has, and only those still holding the bytes the import wrote. Objects the import did not write are never deleted. Needs the delete scope. */
+      mirror_deletes?: boolean;
+    };
+    StartBucketImportRequest: {
+      connection_id: string;
+      /** @description The source bucket's name. It must have verified copy access. */
+      source_bucket: string;
+      /** @description A new Pantech bucket to make and copy into. */
+      destination_bucket_name?: string;
+      /** @description An existing Pantech bucket of the organization to copy into. */
+      destination_bucket_id?: string;
+      /** @description Versioning on a new bucket. */
+      versioning?: boolean;
+      /** @description Make a new bucket publicly readable. Off unless asked, even when the source was public. */
+      public_read?: boolean;
+      /** @description The plan the move belongs to; its size for the bucket is checked against the storage left. */
+      migration_id?: string;
+    };
+    BucketImportProgress: {
+      objects_copied: number;
+      /** @description Already in the Pantech bucket unchanged. */
+      objects_skipped: number;
+      objects_failed: number;
+      bytes_copied: number;
+      bytes_skipped: number;
+    };
+    BucketImportObjectFailure: {
+      key: string;
+      /** @enum {string} */
+      reason:
+        | "object_archived"
+        | "object_access_denied"
+        | "invalid_key"
+        | "object_too_large"
+        | "source_changed"
+        | "verification_failed"
+        | "transfer_failed"
+        | "destination_rejected";
+      message: string;
+      /** Format: date-time */
+      at: string;
+    };
+    BucketImportEvent: {
+      /** @enum {string} */
+      action:
+        | "started"
+        | "cancel_requested"
+        | "resync_requested"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "mirror_deleted"
+        | "mirror_skipped";
+      /** @description Null for Pantech's own steps. */
+      actor_user_id: string | null;
+      detail: string | null;
+      /** Format: date-time */
+      occurred_at: string;
+    };
+    BucketImport: {
+      id: string;
+      connection_id: string;
+      migration_id: string | null;
+      source: {
+        provider: string;
+        bucket: string;
+        region: string | null;
+      };
+      destination: {
+        bucket_id: string;
+        bucket_name: string;
+        public_read: boolean;
+      };
+      /** @enum {string} */
+      status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+      failure: components["schemas"]["BucketImportFailure"];
+      cancel_requested: boolean;
+      /** @description 1 for the first copy; each resync adds one. */
+      pass: number;
+      progress: components["schemas"]["BucketImportProgress"];
+      /** @description Bytes copied over every pass. */
+      total_bytes_copied: number;
+      /** @description The current pass was asked to delete what this import copied and the source no longer has. */
+      mirror_deletes: boolean;
+      /** @description Objects deleted by mirror passes, over every pass. */
+      objects_deleted: number;
+      /**
+       * Format: date-time
+       * @description When a queued import waiting on an unreachable side is tried again.
+       */
+      next_attempt_at: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      started_at: string | null;
+      /** Format: date-time */
+      finished_at: string | null;
+      /** Format: date-time */
+      updated_at: string;
+      /** @description The first 100 objects that failed this pass; null in a list. */
+      failures: components["schemas"]["BucketImportObjectFailure"][] | null;
+      /** @description The audit trail; null in a list. */
+      events: components["schemas"]["BucketImportEvent"][] | null;
+    };
+    BucketImportList: {
+      data: components["schemas"]["BucketImport"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    /** @description The Pantech bucket a bucket item becomes; null for every other kind. */
+    MigrationBucketTarget: {
+      /** @description A valid Pantech bucket name made from the source's; null when none could be made. */
+      name: string | null;
+      region: string;
+      versioning: boolean;
+      /** @description The source bucket was public. The Pantech bucket stays private unless the copy asks. */
+      public_read: boolean;
+      /** @description The source's own daily metric, read by the scan; null when unknown. */
+      size_bytes: number | null;
+      /** @description The source's own daily metric, read by the scan; null when unknown. */
+      object_count: number | null;
+      /**
+       * Format: date
+       * @description The day (YYYY-MM-DD) the size and object count describe: show them as "as of" this day.
+       */
+      size_as_of: string | null;
+    } | null;
+    StartServerCopyRequest: {
+      /** @description The planned server's item key. */
+      item_key: string;
+      /**
+       * @default agent
+       * @enum {string}
+       */
+      source?: "agent" | "aws_snapshot";
+      /** @description The new instance's name; the source's when empty. */
+      name?: string;
+      /** @description Overrides the item's plan. */
+      plan_slug?: string;
+      subnet_id?: string;
+      security_group_id?: string;
+      /** @description Optional. The copied disk keeps its own users and keys. */
+      ssh_key_id?: string;
+      aws?: components["schemas"]["ServerCopyAWSSource"];
+    };
+    ServerCopyAWSSource: {
+      /** @description The copy stack's CopyRoleArn output, never the discover role. */
+      copy_role_arn: string;
+      /** @description The copy role may snapshot the server's volumes itself. */
+      create_snapshots?: boolean;
+      /** @description The first pass's snapshot for each volume id, tagged pantech-migrate-connection. */
+      snapshots?: {
+        [key: string]: string;
+      };
+    };
+    ServerCopyActRequest: {
+      /** @description The next pass's snapshot for each volume id, for an AWS copy that makes none itself. */
+      snapshots?: {
+        [key: string]: string;
+      };
+    };
+    ServerCopyTemplate: {
+      /** @description CloudFormation JSON. */
+      template: string;
+      snapshot_tag: {
+        [key: string]: string;
+      };
+    };
+    ServerCopyList: {
+      data: components["schemas"]["ServerCopy"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    ServerCopy: {
+      /** @description `sco_…` */
+      id: string;
+      migration_id: string;
+      item_key: string;
+      connection_id: string;
+      /** @enum {string} */
+      source: "agent" | "aws_snapshot";
+      /** @enum {string} */
+      status:
+        | "waiting"
+        | "copying"
+        | "synced"
+        | "importing"
+        | "creating_instance"
+        | "completed"
+        | "failed"
+        | "cancelled";
+      failure?: {
+        code?: string;
+        message?: string;
+      } | null;
+      /** @enum {string} */
+      os_family: "linux" | "windows";
+      /** @enum {string|null} */
+      boot_mode?: "bios" | "uefi" | null;
+      instance: {
+        name?: string;
+        plan_slug?: string;
+        region?: string;
+        subnet_id?: string | null;
+        security_group_id?: string | null;
+        ssh_key_id?: string | null;
+        /** @description Set once the instance is being created. */
+        id?: string | null;
+        order_id?: string | null;
+      };
+      disks: {
+        index?: number;
+        /** @enum {string} */
+        role?: "root" | "data";
+        source?: string;
+        /** Format: int64 */
+        size_bytes?: number;
+        snapshot_id?: string | null;
+        volume_id?: string | null;
+      }[];
+      flags: {
+        code?: string;
+        blocking?: boolean;
+        message?: string;
+      }[];
+      pass?: {
+        number?: number;
+        /** @enum {string} */
+        kind?: "full" | "delta" | "final";
+        /** Format: date-time */
+        started_at?: string | null;
+      } | null;
+      /** @enum {string|null} */
+      pending_pass?: "full" | "delta" | "final" | null;
+      progress: {
+        /** Format: int64 */
+        chunks_total?: number;
+        /** Format: int64 */
+        chunks_done?: number;
+        /** Format: int64 */
+        bytes_total?: number;
+        /** Format: int64 */
+        bytes_uploaded?: number;
+        /** Format: int64 */
+        wire_bytes?: number;
+        /** Format: int64 */
+        eta_seconds?: number | null;
+      };
+      /** Format: date-time */
+      synced_at?: string | null;
+      /** Format: date-time */
+      expires_at: string;
+      /** Format: date-time */
+      completed_at?: string | null;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    StartDatabaseImportRequest: {
+      /**
+       * @description The plan item's key: one of the migration's `database` items.
+       * @example database:us-east-1:orders
+       */
+      item_key: string;
+      /**
+       * @description One of your Pantech databases with the same engine as the source. Create it first: it bills as usual; the move itself is free.
+       * @example db_01JD0000000000000000000000
+       */
+      destination_database_id: string;
+      /**
+       * @description The database to create and fill on the destination; it must be empty. Defaults to the source's name, made a valid name: 1 to 63 lowercase letters, digits and underscores, starting with a letter.
+       * @example orders
+       */
+      target_database?: string;
+      /**
+       * @description `dump` copies once (stop writes to the source first). `replicate` keeps following the source's changes until you cut over (PostgreSQL sources only).
+       * @enum {string}
+       */
+      mode?: "dump" | "replicate";
+      /**
+       * @description The source's name in your Migrate agent's configuration, 1 to 64 of letters, digits, `.`, `_` and `-`. Its address and login stay on the agent and are never sent to Pantech.
+       * @example prod-db
+       */
+      source_ref: string;
+    };
+    DatabaseImport: {
+      id: string;
+      migration_id: string;
+      item_key: string;
+      destination_database_id: string;
+      target_database: string;
+      /** @enum {string} */
+      mode: "dump" | "replicate";
+      source_ref: string;
+      /**
+       * @description The source's engine family.
+       * @enum {string}
+       */
+      engine: "postgres" | "mysql" | "mariadb";
+      /** @enum {string} */
+      status:
+        | "awaiting_agent"
+        | "preflight"
+        | "ready"
+        | "blocked"
+        | "copying"
+        | "replicating"
+        | "cutting_over"
+        | "verifying"
+        | "verifying_failed"
+        | "completed"
+        | "cancelling"
+        | "cancelled"
+        | "failed";
+      failure: components["schemas"]["DatabaseImportFailure"];
+      cutover_requested: boolean;
+      cancel_requested: boolean;
+      /** @description A new pre-flight was asked for and the agent has not run it yet. */
+      readiness_requested: boolean;
+      /** @description The import login and its loopback-only access were removed from the destination. */
+      access_revoked: boolean;
+      /** @description A Migrate agent holds this import now. */
+      agent_connected: boolean;
+      /** @description Replication lag in bytes of source WAL not yet applied; null in a dump or before replication starts. */
+      lag_bytes: number | null;
+      /** @description The last applied source position (replicate only). */
+      position: string | null;
+      readiness: components["schemas"]["DatabaseImportReadiness"];
+      destination: components["schemas"]["DatabaseImportDestination"];
+      /** @description Per-table progress; null in a list. */
+      tables: components["schemas"]["DatabaseImportTable"][] | null;
+      /** @description Always false: moving data is free. The destination database bills as usual. */
+      charged: boolean;
+      version: number;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      /** Format: date-time */
+      finished_at: string | null;
+    };
+    /** @description Why the import stopped; null while it has not. */
+    DatabaseImportFailure: {
+      /** @description `statement_refused`, `chunk_invalid`, `access_revoked`, `destination_unavailable`, or one the agent reported: `source_unreachable`, `source_auth_failed`, `source_permission_denied`, `source_not_configured`, `dump_tool_missing`, `source_changed`, `internal`. */
+      code: string;
+      message: string;
+    } | null;
+    /** @description The latest pre-flight; null until the agent ran one. */
+    DatabaseImportReadiness: {
+      /** Format: date-time */
+      checked_at: string;
+      /** @description A blocking issue stops the import until it is fixed and readiness is checked again. */
+      blocked: boolean;
+      issues: components["schemas"]["DatabaseImportIssue"][];
+      source: components["schemas"]["DatabaseImportSource"];
+    } | null;
+    DatabaseImportIssue: {
+      /** @description For example `source_version_newer`, `extension_unavailable`, `size_exceeds_storage`, `size_not_measured`, `table_without_primary_key`, `replication_check_failed`, `mode_not_available`, `target_not_empty`, `destination_not_ready`, `destination_not_supported`. */
+      code: string;
+      blocking: boolean;
+      message: string;
+      /** @description A copy-paste fix for the source's provider (an RDS parameter group setting, a Cloud SQL flag, an Azure server parameter, SQL). */
+      fix: string | null;
+      /** @description What the issue is about (an extension, tables, a check). */
+      subject: string | null;
+    };
+    /** @description What the Migrate agent measured on the source. Numbers it could not measure are null, never estimated. */
+    DatabaseImportSource: {
+      engine: string;
+      version: string | null;
+      /** @description `aws_rds`, `gcp_cloudsql`, `azure`, `digitalocean` or `self_hosted`, as the agent detected it. */
+      provider: string | null;
+      database: string | null;
+      size_bytes: number | null;
+      extensions: string[];
+      table_count: number;
+    };
+    /** @description What your Pantech database reported over the import's own connection; null in a list. Numbers are null until measured. */
+    DatabaseImportDestination: {
+      /**
+       * @description The import login's state on the destination.
+       * @enum {string}
+       */
+      access_state: "not_prepared" | "requested" | "active" | "revoking" | "revoked" | "failed";
+      measured: boolean;
+      engine: string | null;
+      server_version: string | null;
+      disk_available_bytes: number | null;
+      disk_total_bytes: number | null;
+      /** @description Tables already in the target database; an import needs an empty one. */
+      target_tables: number | null;
+      trusted_extensions: string[];
+    } | null;
+    DatabaseImportTable: {
+      schema: string | null;
+      name: string;
+      has_primary_key: boolean;
+      /** @enum {string} */
+      status: "pending" | "copying" | "copied" | "verified" | "verify_failed";
+      pages_copied: number;
+      rows_copied: number;
+      bytes_copied: number;
+      verification: components["schemas"]["DatabaseImportVerification"];
+      /** Format: date-time */
+      updated_at: string;
+    };
+    /** @description The table's comparison; null until it was verified. */
+    DatabaseImportVerification: {
+      source_rows: number;
+      destination_rows: number;
+      /** @description Key ranges whose rows were checksummed on both sides. */
+      samples_checked: number;
+      mismatched_samples: number;
+      passed: boolean;
+    } | null;
+    DatabaseImportList: {
+      data: components["schemas"]["DatabaseImport"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    /** @description Why the move, or its last step, failed; null when nothing failed. `message` is safe to show. */
+    KubernetesMoveFailure: {
+      code: string;
+      message: string;
+    } | null;
+    KubernetesMoveFlag: {
+      code: string;
+      message: string;
+    };
+    KubernetesMoveRef: {
+      /** @description API group; empty for the core API. */
+      group: string;
+      kind: string;
+      namespace: string;
+      name: string;
+    };
+    KubernetesMove: {
+      /** @example kmv_06gk3x9tq7m2v8r4y1c5d0zp8w */
+      id: string;
+      migration_id: string;
+      item_key: string;
+      connection_id: string;
+      /** @description The Pantech cluster the move applies to: always one of your organization's. */
+      cluster_id: string;
+      source_name: string;
+      /** @enum {string} */
+      status:
+        | "exporting"
+        | "ready"
+        | "previewing"
+        | "applying"
+        | "applied"
+        | "syncing"
+        | "cutting_over"
+        | "completed"
+        | "failed"
+        | "cancelled";
+      failure: components["schemas"]["KubernetesMoveFailure"];
+      options: {
+        include_secrets: boolean;
+        copy_volumes: boolean;
+        publish_load_balancers: boolean;
+        namespaces: string[];
+      };
+      summary: {
+        objects: number;
+        refused: number;
+        skipped: number;
+        flagged: number;
+        volumes: number;
+        warnings: components["schemas"]["KubernetesMoveFlag"][];
+        addons: string[];
+      };
+      allow_privileged: components["schemas"]["KubernetesMoveRef"][];
+      /** Format: date-time */
+      previewed_at: string | null;
+      preview_ok: boolean;
+      /** Format: date-time */
+      applied_at: string | null;
+      /** Format: date-time */
+      completed_at: string | null;
+      sync_generation: number;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    /** @description The object's outcome in the last preview or apply; null when it has not run. */
+    KubernetesMoveStep: {
+      /** @enum {string} */
+      result: "created" | "configured" | "unchanged" | "refused" | "unverified";
+      code: string | null;
+      message: string | null;
+    } | null;
+    KubernetesMoveResource: {
+      group: string;
+      kind: string;
+      namespace: string;
+      name: string;
+      api_version: string;
+      /** @description Apply order: definitions first, custom resources last. */
+      tier: number;
+      /** @enum {string} */
+      action: "create" | "refused" | "skipped";
+      flags: components["schemas"]["KubernetesMoveFlag"][];
+      /** @description Refused for the cluster policy; name it in `allow_privileged` on preview to include it anyway. */
+      policy_refused: boolean;
+      preview: components["schemas"]["KubernetesMoveStep"];
+      apply: components["schemas"]["KubernetesMoveStep"];
+    };
+    KubernetesMoveVolume: {
+      id: string;
+      namespace: string;
+      claim: string;
+      size_bytes: number;
+      source_storage_class: string;
+      target_storage_class: string;
+      access_modes: string[];
+      /** @enum {string} */
+      status: "pending" | "copying" | "synced" | "failed" | "unsupported";
+      flags: components["schemas"]["KubernetesMoveFlag"][];
+      generation: number;
+      synced_generation: number;
+      bytes_total: number;
+      bytes_done: number;
+      files_total: number;
+      /** @description The destination's own read-back matched the source's checksum. */
+      checksum_verified: boolean;
+      /** Format: date-time */
+      synced_at: string | null;
+      failure: components["schemas"]["KubernetesMoveFailure"];
+    };
+    KubernetesMoveImage: {
+      image: string;
+      flags: components["schemas"]["KubernetesMoveFlag"][];
+    };
+    /** @description A workload applied scaled down (or suspended) until the cutover, and what the cutover returns it to. */
+    KubernetesMoveHold: {
+      group: string;
+      kind: string;
+      namespace: string;
+      name: string;
+      replicas: number;
+      suspend: boolean;
+    };
+    KubernetesMoveDetail: components["schemas"]["KubernetesMove"] & {
+      resources: components["schemas"]["KubernetesMoveResource"][];
+      volumes: components["schemas"]["KubernetesMoveVolume"][];
+      images: components["schemas"]["KubernetesMoveImage"][];
+      holds: components["schemas"]["KubernetesMoveHold"][];
+    };
+    KubernetesMoveSourceAccess: {
+      /** @description Read-only access (get, list, watch; no Secrets). */
+      reader: string;
+      /** @description Adds reading Secrets. Apply only to move Secrets. */
+      secrets_reader: string;
+      /** @description Lets the agent start copy pods. Bind it in each namespace whose volumes you copy. */
+      copier: string;
+    };
+    StartKubernetesMoveRequest: {
+      /** @description A `kubernetes_cluster` item of the plan. */
+      item_key: string;
+      /** @description A running Pantech cluster of your organization. */
+      cluster_id: string;
+      /** @default false */
+      include_secrets?: boolean;
+      /** @default false */
+      copy_volumes?: boolean;
+      /** @default true */
+      publish_load_balancers?: boolean;
+      namespaces?: string[];
+    };
+    PreviewKubernetesMoveRequest: {
+      allow_privileged?: components["schemas"]["KubernetesMoveRef"][];
+    };
+    CutoverKubernetesMoveRequest: {
+      source_writes_stopped: boolean;
+    };
+    KubernetesMoveList: {
+      data: components["schemas"]["KubernetesMove"][];
+      /** @description Always null: this list is returned whole. */
+      next_cursor: string | null;
+    };
+    /** @description A Kubernetes cluster the scan found. The cluster's certificate authority is never kept. */
+    CloudKubernetesCluster: {
+      id: string;
+      name: string;
+      region: string;
+      /** @description Who runs the control plane: eks, gke, aks, doks, lke or self_managed. */
+      provider: string;
+      version: string | null;
+      endpoint_public: boolean;
+      node_pools: components["schemas"]["CloudNodePool"][];
+      addons: string[];
+      /** Format: date-time */
+      created_at: string | null;
+    };
+    CloudNodePool: {
+      name: string;
+      instance_type: string | null;
+      vcpu: number | null;
+      memory_mib: number | null;
+      architecture: string;
+      gpu: boolean;
+      windows: boolean;
+      desired: number;
+      autoscaling: boolean;
+      min: number;
+      max: number;
+    };
+    /** @description What a kubernetes_cluster item becomes on Pantech; null for every other kind. */
+    MigrationKubernetesTarget: {
+      version_id: string | null;
+      version: string | null;
+      node_pools: components["schemas"]["MigrationNodePool"][];
+      addons: string[];
+      /** @description The customer consented to a lower Kubernetes version than the source runs. */
+      allow_downgrade: boolean;
+    } | null;
+    MigrationNodePool: {
+      name: string;
+      plan_slug: string | null;
+      count: number;
+      autoscaling: boolean;
+      min: number;
+      max: number;
+      source_name: string;
     };
     /** @description A bucket. */
     Bucket: {
@@ -30459,6 +32068,2214 @@ export interface operations {
         };
       };
       /** @description `ADDRESS_ROTATION_UNAVAILABLE`: dynamic IPs are not available yet. Try again later. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listCloudProviders: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The providers. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudProviderList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `MIGRATE_AGENT_UNAVAILABLE` / `MIGRATE_INVITES_UNAVAILABLE`: this part of Pantech Migrate is not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createCloudAgentEnrollment: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The code. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudAgentEnrollment"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CLOUD_CONNECTION_NOT_AGENT`: Pantech reads this cloud itself; it needs no agent. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `MIGRATE_AGENT_UNAVAILABLE` / `MIGRATE_INVITES_UNAVAILABLE`: this part of Pantech Migrate is not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  revokeCloudAgent: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The connection. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudConnection"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CLOUD_CONNECTION_NOT_AGENT`: Pantech reads this cloud itself; it has no agent. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `MIGRATE_AGENT_UNAVAILABLE` / `MIGRATE_INVITES_UNAVAILABLE`: this part of Pantech Migrate is not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sendMigrationInvites: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SendMigrationInvitesRequest"];
+      };
+    };
+    responses: {
+      /** @description What happened to each person, and the plan. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MigrationInvites"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `keys` must name 1 to 50 items. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `MIGRATE_AGENT_UNAVAILABLE` / `MIGRATE_INVITES_UNAVAILABLE`: this part of Pantech Migrate is not available on this deployment yet.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getCopyAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The copy access. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CopyAccess"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  putCopyAccess: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        connection_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CopyAccessRequest"];
+      };
+    };
+    responses: {
+      /** @description The copy access. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CopyAccess"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`: no cloud connection with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `COPY_ACCESS_VERIFYING`: the copy access is still being checked. `CONFLICT`: it changed at the same time. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `buckets` must name 1 to 50 buckets, each once; `role_arn` must be a role in the connected account. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listBucketImports: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bucket imports. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BucketImportList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startBucketImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartBucketImportRequest"];
+      };
+    };
+    responses: {
+      /** @description The queued import. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BucketImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /** @description `FORBIDDEN` or `INSUFFICIENT_SCOPE`: the key may not do this. `BUCKET_IMPORT_LIMIT_REACHED`: 20 imports are already in progress. `BUCKET_IMPORT_TOO_LARGE`: the bucket is larger than the storage your organization has left. `OBJECT_STORAGE_NOT_ENABLED`: object storage is not enabled for your organization. `BUCKET_LIMIT_REACHED`: the organization has the most buckets allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `CLOUD_CONNECTION_NOT_FOUND`, `MIGRATION_NOT_FOUND` or `BUCKET_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `COPY_ACCESS_NOT_READY`: grant and verify copy access to this bucket first. `BUCKET_IMPORT_IN_PROGRESS`: the bucket is already being copied. `BUCKET_NAME_TAKEN`: a bucket with that name exists. `CLOUD_CONNECTION_NOT_CONNECTED`, `CLOUD_CONNECTION_VERIFYING` or `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: name the source bucket, and exactly one of `destination_bucket_name` (a valid bucket name) and `destination_bucket_id`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getBucketImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BucketImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `BUCKET_IMPORT_NOT_FOUND`: no bucket import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelBucketImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BucketImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `BUCKET_IMPORT_NOT_FOUND`: no bucket import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `BUCKET_IMPORT_FINISHED`: the import has already finished. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  resyncBucketImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ResyncBucketImportRequest"];
+      };
+    };
+    responses: {
+      /** @description The import, queued. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BucketImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `BUCKET_IMPORT_NOT_FOUND`: no bucket import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `BUCKET_IMPORT_RUNNING`: the import is still queued or running. `COPY_ACCESS_NOT_READY`: copy access to the bucket was withdrawn. `BUCKET_IMPORT_IN_PROGRESS`: another import of the bucket is open. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startServerCopy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartServerCopyRequest"];
+      };
+    };
+    responses: {
+      /** @description The copy, waiting for its first pass. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `SERVER_COPY_IN_PROGRESS`: this server already has a copy in progress. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used for another request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `NOT_COPYABLE` (not a planned server), `INVALID_PLAN`, `INVALID_NAME`, `INVALID_SOURCE` (copy role or snapshots), `WINDOWS_NEEDS_AGENT`, `INVALID_DISKS` or `TARGET_NOT_FOUND` (subnet, security group or SSH key). `SERVER_COPY_LIMIT_REACHED` is a 403: five copies are in progress. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getServerCopyTemplate: {
+    parameters: {
+      query: {
+        item_key: string;
+        create_snapshots?: boolean;
+      };
+      header?: never;
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The template. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopyTemplate"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND` or no server with this item key. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listServerCopies: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Copies. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopyList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getServerCopy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        copy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The copy. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `SERVER_COPY_NOT_FOUND`: no server copy with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  syncServerCopy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        copy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ServerCopyActRequest"];
+      };
+    };
+    responses: {
+      /** @description The copy, waiting for its next pass. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `SERVER_COPY_NOT_FOUND`: no server copy with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `SERVER_COPY_BUSY`: a pass is running or the server is being created. `SERVER_COPY_NOT_SYNCED`: the first pass has not finished. `SERVER_COPY_FINISHED`: the copy has finished, failed or been cancelled. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used for another action. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cutOverServerCopy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        copy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ServerCopyActRequest"];
+      };
+    };
+    responses: {
+      /** @description The copy, waiting for its last pass. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `SERVER_COPY_NOT_FOUND`: no server copy with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `SERVER_COPY_BUSY`: a pass is running or the server is being created. `SERVER_COPY_NOT_SYNCED`: the first pass has not finished. `SERVER_COPY_FINISHED`: the copy has finished, failed or been cancelled. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used for another action. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelServerCopy: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        copy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ServerCopyActRequest"];
+      };
+    };
+    responses: {
+      /** @description The cancelled copy. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServerCopy"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `SERVER_COPY_NOT_FOUND`: no server copy with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `SERVER_COPY_BUSY`: a pass is running or the server is being created. `SERVER_COPY_NOT_SYNCED`: the first pass has not finished. `SERVER_COPY_FINISHED`: the copy has finished, failed or been cancelled. `IDEMPOTENCY_CONFLICT`: this Idempotency-Key was used for another action. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `SERVER_COPY_UNAVAILABLE` or `MIGRATE_UNAVAILABLE`: server copies are not available on this deployment yet. `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startDatabaseImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartDatabaseImportRequest"];
+      };
+    };
+    responses: {
+      /** @description The import. */
+      201: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`: no migration with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DATABASE_IMPORT_DESTINATION_IN_USE`: the database already has an import in progress. `DATABASE_IMPORT_ITEM_NOT_IMPORTABLE`: the item is excluded or its engine is not offered. `IDEMPOTENCY_CONFLICT`: the key was used for a different request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `item_key` names no item (`UNKNOWN_ITEM`) or not a database (`NOT_A_DATABASE`); `destination_database_id` names no database (`DATABASE_NOT_FOUND`) or one with another engine (`ENGINE_MISMATCH`); or `source_ref`, `target_database` or `mode` is invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listDatabaseImports: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Database imports. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImportList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getDatabaseImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `DATABASE_IMPORT_NOT_FOUND`: no database import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  checkDatabaseImportReadiness: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `DATABASE_IMPORT_NOT_FOUND`: no database import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DATABASE_IMPORT_INVALID_STATE`, `DATABASE_IMPORT_FINISHED` or `DATABASE_IMPORT_NOT_COPIED`: the import cannot do this now. `CONFLICT`: it changed at the same time; retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cutOverDatabaseImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `DATABASE_IMPORT_NOT_FOUND`: no database import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DATABASE_IMPORT_INVALID_STATE`, `DATABASE_IMPORT_FINISHED` or `DATABASE_IMPORT_NOT_COPIED`: the import cannot do this now. `CONFLICT`: it changed at the same time; retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelDatabaseImport: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `DATABASE_IMPORT_NOT_FOUND`: no database import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DATABASE_IMPORT_INVALID_STATE`, `DATABASE_IMPORT_FINISHED` or `DATABASE_IMPORT_NOT_COPIED`: the import cannot do this now. `CONFLICT`: it changed at the same time; retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  revokeDatabaseImportAccess: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The import. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatabaseImport"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `DATABASE_IMPORT_NOT_FOUND`: no database import with this id exists in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `DATABASE_IMPORT_INVALID_STATE`, `DATABASE_IMPORT_FINISHED` or `DATABASE_IMPORT_NOT_COPIED`: the import cannot do this now. `CONFLICT`: it changed at the same time; retry. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `DATABASE_IMPORT_UNAVAILABLE`: your Pantech database could not be reached right now. Try again in a minute.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startKubernetesMove: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        migration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StartKubernetesMoveRequest"];
+      };
+    };
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description Where the new resource is. */
+          Location?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `MIGRATION_NOT_FOUND`, `KUBERNETES_CLUSTER_NOT_FOUND`: no such plan or cluster in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_CLUSTER_NOT_RUNNING`, `KUBERNETES_MOVE_CLUSTER_BUSY`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `item_key` names no cluster item, or the item is excluded or blocked; a namespace name is invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       *     `VOLUME_COPY_UNAVAILABLE`: copying volume data is not available on this deployment.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listKubernetesMoves: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMoveList"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getKubernetesMoveSourceAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMoveSourceAccess"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getKubernetesMove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMoveDetail"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  previewKubernetesMove: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PreviewKubernetesMoveRequest"];
+      };
+    };
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_MOVE_INVALID_STATE`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `allow_privileged` names an object the policy did not refuse. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  applyKubernetesMove: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_MOVE_PREVIEW_REQUIRED`, `KUBERNETES_MOVE_PREVIEW_FAILED`, `KUBERNETES_MOVE_INVALID_STATE`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  syncKubernetesMoveVolumes: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_MOVE_INVALID_STATE`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       *     `VOLUME_COPY_UNAVAILABLE`: copying volume data is not available on this deployment.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cutoverKubernetesMove: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CutoverKubernetesMoveRequest"];
+      };
+    };
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_MOVE_VOLUMES_NOT_SYNCED`, `KUBERNETES_MOVE_INVALID_STATE`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `source_writes_stopped` must be true. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelKubernetesMove: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The move. */
+      202: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KubernetesMove"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `KUBERNETES_MOVE_INVALID_STATE`, `IDEMPOTENCY_CONFLICT`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  downloadKubernetesMoveManifests: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        move_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK. */
+      200: {
+        headers: {
+          /** @description Requests allowed per window for this key. */
+          "RateLimit-Limit"?: number;
+          /** @description Requests left in this window. */
+          "RateLimit-Remaining"?: number;
+          /** @description Seconds until the window resets. */
+          "RateLimit-Reset"?: number;
+          /** @description This request's id. */
+          "X-Request-Id"?: string;
+          /** @description attachment; filename="<move id>.yaml" */
+          "Content-Disposition"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/yaml": string;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      /** @description `KUBERNETES_MOVE_NOT_FOUND`, `KUBERNETES_MOVE_MANIFESTS_NOT_READY`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /**
+       * @description `MIGRATE_UNAVAILABLE`: Pantech Migrate is not available on this deployment yet. Try again later.
+       *     `SERVICE_UNAVAILABLE`: request quota storage is unavailable. Wait a few seconds, then retry.
+       */
       503: {
         headers: {
           [name: string]: unknown;
