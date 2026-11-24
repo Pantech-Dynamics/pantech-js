@@ -5,8 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 The official client for the [Pantech Dynamics public API](https://docs.pantechdynamics.com/api):
-instances, VPC networks, firewalls, public IPs, load balancers, volumes, snapshots, managed
-databases, managed Kubernetes, SSH keys, webhooks, billing, usage, and moving from another cloud.
+instances, VPC networks, firewalls, public IPs, load balancers, volumes, snapshots, object storage,
+managed databases, managed Kubernetes, SSH keys, webhooks, billing, usage, and moving from another
+cloud.
 
 - Zero runtime dependencies. Uses the global `fetch` and Web Crypto, so it runs on Node.js 18+,
   Bun, Deno and edge runtimes.
@@ -65,13 +66,14 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 |---|---|
 | Account | `me.get()`, `me.revoke()` |
 | Catalogue | `regions.list()`, `plans.list({ placement })`, `images.list()`, `diskOfferings.quote(slug, { size_gb })`, `databaseEngines.list()`, `kubernetesVersions.list()`, `pricing.estimate({...})` |
-| Instances | `instances.list/listAll/create/get/delete/start/stop/reboot/rebuild/rename/resize/restore/…`, `instances.snapshots.*`, `instances.sshAccess.*`, `instanceOrders.wait(order)` |
+| Instances | `instances.list/listAll/create/get/delete/start/stop/reboot/rebuild/rename/resize/restore/…`, `instances.snapshots.*`, `instances.sshAccess.*`, `instances.dynamicIp.*`, `instanceOrders.wait(order)` |
 | Networks | `networks.*`, `networks.subnets.list(networkId)`, `networks.firewallRules.create(subnetId, {...})` |
 | Public IPs | `publicIps.*`, `publicIps.portForwardingRules.*` |
 | Load balancers | `loadBalancers.*` |
 | Kubernetes | `kubernetes.*`, `kubernetes.nodePools.*`, `kubernetes.addons.toggle(...)` |
 | Security groups | `securityGroups.*`, `securityGroups.replaceRules(id, {...})` |
 | Volumes and snapshots | `volumes.*`, `volumes.snapshots.*`, `snapshots.*` |
+| Object storage | `objectStorage.getStatus/getUsage`, `objectStorage.keys.*`, `buckets.*`, `buckets.objects.*`, `buckets.multipart.*` |
 | Databases | `databases.*`, `databases.snapshots.*`, `databaseOrders.wait(order)` |
 | SSH keys, webhooks | `sshKeys.*`, `webhooks.*`, `webhooks.deliveries.*` |
 | Billing and usage | `billing.credit.get()`, `billing.credit.purchases.create(...)`, `billing.receipts.getPdf(id)`, `usage.get()` |
@@ -111,6 +113,72 @@ A failed operation rejects with `OperationFailedError` (`code`, `detail` from it
 failed or unpaid order with `OrderFailedError`, a failed cloud connection or scan with
 `CloudFailedError`, a failed DNS zone or record change with `DNSFailedError`, a certificate that
 cannot be issued with `CertificateFailedError`, and a wait that runs out with `WaitTimeoutError`.
+
+## Dynamic IP
+
+`client.instances.dynamicIp` manages a rotating public outbound address on a standard instance:
+outbound traffic leaves from a dynamic IP that changes on your schedule (`every_12_hours`, `daily`,
+`weekly`, or `monthly`), while inbound traffic continues to reach the instance's static address.
+
+```ts
+// Enable Dynamic IP at creation time:
+const order = await client.instances.create({
+  name: "worker-1",
+  plan_slug: "starter",
+  image_slug: "ubuntu-24-04",
+  ssh_key_id: "sshk_…",
+  security_group_id: "sg_…",
+  address_rotation: { schedule: "weekly", connections: "keep" },
+});
+
+// Or manage Dynamic IP on an existing instance:
+await client.instances.dynamicIp.set("vm_…", { schedule: "daily", connections: "move", on_demand: true });
+const ip = await client.instances.dynamicIp.get("vm_…");
+console.log(ip.state, ip.current_address, ip.next_rotation_at);
+
+// Rotate immediately (requires on_demand: true; sent once and never retried after an error):
+await client.instances.dynamicIp.rotate("vm_…");
+
+// Turn off Dynamic IP and end its surcharge:
+await client.instances.dynamicIp.disable("vm_…");
+```
+
+## Object storage
+
+`client.objectStorage` and `client.buckets` manage S3-compatible buckets, access keys, binary
+uploads and downloads, per-object visibility, multipart uploads, and bucket rules (CORS, lifecycle,
+tags, and object lock).
+
+```ts
+const status = await client.objectStorage.getStatus();
+const key = await client.objectStorage.keys.create({ name: "app", region: "af-abj" });
+// key.secret_access_key is shown once and is non-enumerable (console.log / JSON.stringify omit it).
+
+const bucket = await client.buckets.create({ name: "media-assets", region: "af-abj" });
+
+// Upload raw bytes (Uint8Array, ArrayBuffer, Blob, or string) and download as ArrayBuffer:
+await client.buckets.objects.upload(bucket.id, { key: "images/hero.png" }, pngBytes, {
+  headers: { "Content-Type": "image/png" },
+});
+const data = await client.buckets.objects.download(bucket.id, { key: "images/hero.png" });
+
+// Publish one object and read its public URL:
+const vis = await client.buckets.objects.setVisibility(bucket.id, { key: "images/hero.png", public: true });
+console.log(vis.public_url);
+
+// Multipart upload for large objects:
+const session = await client.buckets.multipart.start(bucket.id, { key: "backups/db.tar.gz" });
+const part1 = await client.buckets.multipart.uploadPart(
+  bucket.id,
+  { key: "backups/db.tar.gz", upload_id: session.upload_id, part_number: 1 },
+  chunk1,
+);
+await client.buckets.multipart.complete(bucket.id, {
+  key: "backups/db.tar.gz",
+  upload_id: session.upload_id,
+  parts: [{ part_number: 1, etag: part1.etag }],
+});
+```
 
 ## Move from another cloud
 
@@ -306,8 +374,10 @@ to `maxRetries` times with jittered backoff.
 
 The API does not replay some writes by key, so the SDK sends them once (except after a `429`,
 which is refused before anything runs): creating and deleting SSH keys, opening an instance
-console, issuing a volume key credential, testing, deleting, rotating the secret of and
-redelivering webhooks, and `DELETE /me`.
+console, issuing a volume key credential, rotating an instance's dynamic IP now
+(`instances.dynamicIp.rotate`), creating object storage access keys, emptying a bucket, starting
+and completing multipart uploads, testing, deleting, rotating the secret of and redelivering
+webhooks, and `DELETE /me`.
 
 ## Webhooks
 

@@ -1,4 +1,4 @@
-import type { APIRequest, HTTPMethod, Pantech, RequestOptions } from "./client.js";
+import type { APIRequest, BinaryBody, HTTPMethod, Pantech, RequestOptions } from "./client.js";
 import { type Page, paginate } from "./pagination.js";
 
 type Extra = Pick<APIRequest, "noRetry" | "responseType">;
@@ -13,8 +13,8 @@ export interface IfMatchOptions extends RequestOptions {
   ifMatch?: number;
 }
 
-/** Response fields that are secrets: a registry token's `secret`, an exported `private_key_pem`. */
-const SECRET_FIELDS = ["secret", "private_key_pem"] as const;
+/** Response fields that are secrets: a registry token's `secret`, an exported `private_key_pem`, or an object storage key's `secret_access_key`. */
+const SECRET_FIELDS = ["secret", "private_key_pem", "secret_access_key"] as const;
 
 /**
  * Makes a response's secret fields non-enumerable: `value.secret` still reads
@@ -54,7 +54,7 @@ export abstract class APIResource {
   protected _request<T>(
     method: HTTPMethod,
     path: string,
-    init: { query?: object; body?: unknown } & Extra = {},
+    init: { query?: object; body?: unknown; rawBody?: BinaryBody } & Extra = {},
     options?: RequestOptions,
   ): Promise<T> {
     return this._client.request<T>({ method, path, ...init }, options);

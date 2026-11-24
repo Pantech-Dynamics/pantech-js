@@ -26,11 +26,18 @@ export function mockClient(handler: Handler, options: ConstructorParameters<type
   const calls: Call[] = [];
   const fetch = async (input: string, init: RequestInit = {}) => {
     if (init.signal?.aborted) throw init.signal.reason;
+    const headers = new Headers(init.headers);
+    let body: unknown;
+    if (typeof init.body === "string") {
+      body = headers.get("content-type")?.includes("application/json") ? JSON.parse(init.body) : init.body;
+    } else {
+      body = init.body ?? undefined;
+    }
     const call: Call = {
       method: init.method ?? "GET",
       url: new URL(input),
-      headers: new Headers(init.headers),
-      body: typeof init.body === "string" ? JSON.parse(init.body) : undefined,
+      headers,
+      body,
     };
     calls.push(call);
     return handler(call, calls.length - 1);
