@@ -23,3 +23,12 @@ export type Me = Omit<SpecMe, "api_key"> & {
     client_name?: string | null;
   };
 };
+
+/** An instance's dynamic IP configuration, current address and recent changes. */
+export type DynamicIp = components["schemas"]["AddressRotation"];
+
+/** One recorded change of an instance's dynamic IP. */
+export type DynamicIpEvent = components["schemas"]["AddressRotationEvent"];
+
+/** Body of `instances.dynamicIp.set`: turns on or changes an instance's dynamic IP. */
+export type PutDynamicIpRequest = components["schemas"]["PutAddressRotationRequest"];

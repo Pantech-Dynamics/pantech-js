@@ -1,5 +1,6 @@
 export {
   type APIRequest,
+  type BinaryBody,
   type ClientOptions,
   DEFAULT_BASE_URL,
   type HTTPMethod,

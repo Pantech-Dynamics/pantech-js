@@ -17,6 +17,8 @@ export class Instances extends APIResource {
   readonly snapshots: InstanceSnapshots = new InstanceSnapshots(this._client);
   /** Short-lived SSH access grants through the browser terminal relay. */
   readonly sshAccess: InstanceSshAccess = new InstanceSshAccess(this._client);
+  /** Dynamic IP: a public outbound address that rotates on a schedule or on demand. */
+  readonly dynamicIp: InstanceDynamicIp = new InstanceDynamicIp(this._client);
 
   /** One page of your instances. */
   list(params: L<"listInstances"> = {}, options?: RequestOptions): Promise<R<"listInstances">> {
@@ -188,6 +190,32 @@ export class InstanceSshAccess extends APIResource {
 
   revoke(instanceId: string, grantId: string, options?: RequestOptions): Promise<R<"revokeSSHAccess">> {
     return this._delete(path`/instances/${instanceId}/ssh-access/${grantId}`, options);
+  }
+}
+
+export class InstanceDynamicIp extends APIResource {
+  /** Whether the instance has a dynamic IP, its schedule, current address and recent changes. */
+  get(instanceId: string, options?: RequestOptions): Promise<R<"getInstanceAddressRotation">> {
+    return this._get(path`/instances/${instanceId}/address-rotation`, undefined, options);
+  }
+
+  /** Turns on or changes dynamic IP settings for the instance. */
+  set(
+    instanceId: string,
+    body: B<"putInstanceAddressRotation">,
+    options?: RequestOptions,
+  ): Promise<R<"putInstanceAddressRotation">> {
+    return this._put(path`/instances/${instanceId}/address-rotation`, body, options);
+  }
+
+  /** Turns off dynamic IP for the instance and stops its surcharge. */
+  disable(instanceId: string, options?: RequestOptions): Promise<R<"deleteInstanceAddressRotation">> {
+    return this._delete(path`/instances/${instanceId}/address-rotation`, options);
+  }
+
+  /** Gives the instance a new dynamic IP now, outside its schedule. Sent once: the API does not replay it. */
+  rotate(instanceId: string, options?: RequestOptions): Promise<R<"rotateInstanceAddressNow">> {
+    return this._post(path`/instances/${instanceId}/address-rotation/rotate`, undefined, options, { noRetry: true });
   }
 }
 

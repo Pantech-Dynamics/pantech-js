@@ -24,6 +24,7 @@ import { LoadBalancers } from "./resources/load-balancers.js";
 import { MeResource } from "./resources/me.js";
 import { Migrate } from "./resources/migrate.js";
 import { Networks } from "./resources/networks.js";
+import { Buckets, ObjectStorage } from "./resources/object-storage.js";
 import { Operations } from "./resources/operations.js";
 import { PublicIps } from "./resources/public-ips.js";
 import { Registry } from "./resources/registry.js";
@@ -82,6 +83,9 @@ export interface RequestOptions {
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+/** A raw binary (or plain text) request payload, sent without JSON serialization. */
+export type BinaryBody = Uint8Array | ArrayBuffer | Blob | string;
+
 /** A low-level request, for endpoints you want to call directly. */
 export interface APIRequest {
   method: HTTPMethod;
@@ -92,12 +96,18 @@ export interface APIRequest {
   /** Sent as JSON. */
   body?: unknown;
   /**
+   * Sent as raw bytes without JSON serialization. Defaults to
+   * `Content-Type: application/octet-stream` unless the caller supplies a
+   * custom `Content-Type` header.
+   */
+  rawBody?: BinaryBody;
+  /**
    * Sends a write once. For endpoints the API does not replay by
    * Idempotency-Key, where a retry after a lost answer would act twice. A
    * `429` is still retried: it is refused before anything runs.
    */
   noRetry?: boolean;
-  /** How to read a successful response. Default `json`; `text` for a zone file. */
+  /** How to read a successful response. Default `json`; `text` for a zone file; `arrayBuffer` for binary downloads. */
   responseType?: "json" | "arrayBuffer" | "text" | "response";
 }
 
@@ -105,7 +115,7 @@ const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 const ACCEPT: Record<NonNullable<APIRequest["responseType"]>, string> = {
   json: "application/json",
-  arrayBuffer: "*/*",
+  arrayBuffer: "application/octet-stream",
   text: "text/dns, text/plain;q=0.9",
   response: "application/json",
 };
@@ -161,6 +171,10 @@ export class Pantech {
   readonly iam: IAM;
   /** TLS certificates Pantech issues and renews, or ones you import. */
   readonly certificates: Certificates;
+  /** S3-compatible object storage: status, usage and access keys. */
+  readonly objectStorage: ObjectStorage;
+  /** Object storage buckets, objects, multipart uploads and bucket rules. */
+  readonly buckets: Buckets;
   readonly operations: Operations;
 
   constructor(options: ClientOptions = {}) {
@@ -211,6 +225,8 @@ export class Pantech {
     this.registry = new Registry(this);
     this.iam = new IAM(this);
     this.certificates = new Certificates(this);
+    this.objectStorage = new ObjectStorage(this);
+    this.buckets = new Buckets(this);
   }
 
   /**
@@ -227,8 +243,13 @@ export class Pantech {
       ...options.headers,
       Authorization: `Bearer ${this.#apiKey}`,
     };
-    let payload: string | undefined;
-    if (req.body !== undefined) {
+    let payload: BodyInit | undefined;
+    if (req.rawBody !== undefined) {
+      payload = req.rawBody as BodyInit;
+      if (!hasHeader(headers, "content-type")) {
+        headers["Content-Type"] = "application/octet-stream";
+      }
+    } else if (req.body !== undefined) {
       payload = JSON.stringify(req.body);
       headers["Content-Type"] = "application/json";
     }
@@ -289,6 +310,10 @@ export class Pantech {
       );
     }
   }
+}
+
+function hasHeader(headers: Record<string, string>, name: string): boolean {
+  return Object.keys(headers).some((key) => key.toLowerCase() === name);
 }
 
 function queryString(query: object | undefined): string {

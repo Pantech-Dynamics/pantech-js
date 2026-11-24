@@ -4,6 +4,23 @@ A new version heading here (`## X.Y.Z (YYYY-MM-DD)`) pushed to main is
 tagged `vX.Y.Z` and published to npm. Add changes under `## Unreleased`
 until then.
 
+## Unreleased
+
+## 0.5.0 (2026-11-24)
+
+- Dynamic IP for instances: `instances.dynamicIp` (`get`, `set`, `disable`, and non-retrying
+  `rotate`), optional `address_rotation` on `instances.create`, and `DynamicIp`, `DynamicIpEvent`,
+  and `PutDynamicIpRequest` type aliases.
+- S3-compatible Object Storage: `client.objectStorage` (`getStatus`, `getUsage`, and
+  `objectStorage.keys.{list, create, revoke}` with non-enumerable `secret_access_key`) and
+  `client.buckets` (`list`, `create`, `get`, `update`, `delete`, `stats`, `empty`, CORS, lifecycle,
+  tags, object lock, `buckets.objects.*` with binary upload/download and per-object visibility, and
+  `buckets.multipart.*`).
+- Raw binary request body support (`BinaryBody`: `Uint8Array | ArrayBuffer | Blob | string`,
+  defaulting to `Content-Type: application/octet-stream` unless overridden) and `Accept:
+  application/octet-stream` for `arrayBuffer` binary downloads across Node.js, Bun, Deno, and edge
+  runtimes.
+
 ## 0.4.0 (2026-11-10)
 
 - `client.dns`, Pantech DNS on Pantech's own name servers (two per zone): `dns.zones` (`list`, `listAll`,
