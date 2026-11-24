@@ -79,6 +79,18 @@ export class Databases extends APIResource {
   ): Promise<R<"resizeDatabaseStorage">> {
     return this._post(path`/databases/${databaseId}/resize-storage`, body, options);
   }
+
+  getSnapshotSchedule(databaseId: string, options?: RequestOptions): Promise<R<"getDatabaseSnapshotSchedule">> {
+    return this._get(path`/databases/${databaseId}/snapshot-schedule`, undefined, options);
+  }
+
+  setSnapshotSchedule(
+    databaseId: string,
+    body: B<"putDatabaseSnapshotSchedule">,
+    options?: RequestOptions,
+  ): Promise<R<"putDatabaseSnapshotSchedule">> {
+    return this._put(path`/databases/${databaseId}/snapshot-schedule`, body, options);
+  }
 }
 
 export class DatabaseSnapshots extends APIResource {
