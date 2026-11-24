@@ -108,6 +108,7 @@ describe("retries", () => {
     ["POST /webhooks/{id}/rotate-secret", (c) => c.webhooks.rotateSecret("wh_1")],
     ["POST /webhooks/{id}/deliveries/{id}/redeliver", (c) => c.webhooks.deliveries.redeliver("wh_1", "whd_1")],
     ["DELETE /me", (c) => c.me.revoke()],
+    ["POST /cloud-connections/{id}/agent-enrollments", (c) => c.migrate.connections.enrollAgent("cc_1")],
   ] as const satisfies ReadonlyArray<readonly [string, (c: Pantech) => Promise<unknown>]>) {
     it(`sends ${name} once, since the API does not replay it`, async () => {
       const { client, calls } = mockClient(() => json(503, {}, retryNow));

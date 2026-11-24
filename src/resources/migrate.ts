@@ -28,17 +28,42 @@ function cloudFailed(kind: "connection" | "scan", id: string, failure: CloudFail
 }
 
 /**
- * Move from another cloud: connect an AWS account through a read-only role
- * (no access keys are shared), scan what runs there, and plan the move to
- * Pantech with a price comparison and a Terraform export.
+ * Move from another cloud: connect it read-only (AWS, Google Cloud, Azure and
+ * Huawei Cloud through short-lived tokens Pantech signs; DigitalOcean,
+ * Hetzner, Linode, Vultr, Contabo and OpenStack through the Pantech Migrate
+ * agent, which keeps your token on your machine), scan what runs there, plan
+ * the move to Pantech with a price comparison and a Terraform export, then
+ * copy buckets, servers, databases and Kubernetes clusters across.
  */
 export class Migrate extends APIResource {
-  /** Connections to AWS accounts through a read-only role only Pantech can assume. */
+  /** The clouds Migrate can connect, and how it reads each. */
+  readonly providers: CloudProviders = new CloudProviders(this._client);
+  /** Read-only connections to your accounts in other clouds. */
   readonly connections: CloudConnections = new CloudConnections(this._client);
-  /** Reads of everything a connection's role can see. */
+  /** Reads of everything a connection can see. */
   readonly scans: CloudScans = new CloudScans(this._client);
-  /** Plans to move what a scan found to Pantech. Nothing is created until you apply the Terraform. */
+  /** Plans to move what a scan found to Pantech. Nothing is created until you apply the Terraform or start a copy. */
   readonly migrations: Migrations = new Migrations(this._client);
+  /** A connection's opt-in copy access: the buckets Pantech may copy, through a separate copy role. */
+  readonly copyAccess: CopyAccessResource = new CopyAccessResource(this._client);
+  /** Copies of a source bucket's objects into a Pantech bucket. */
+  readonly bucketImports: BucketImports = new BucketImports(this._client);
+  /** Copies of a planned server's disks into a new Pantech instance. */
+  readonly serverCopies: ServerCopies = new ServerCopies(this._client);
+  /** Moves of a planned database into one of your Pantech databases, through the Migrate agent. */
+  readonly databaseImports: DatabaseImports = new DatabaseImports(this._client);
+  /** Moves of a planned Kubernetes cluster into one of your Pantech clusters. */
+  readonly kubernetesMoves: KubernetesMoves = new KubernetesMoves(this._client);
+}
+
+export class CloudProviders extends APIResource {
+  /**
+   * Every cloud Migrate can connect: how it reads each (`federated` or
+   * `agent`), and whether a scan reads its spend and its people.
+   */
+  list(options?: RequestOptions): Promise<R<"listCloudProviders">> {
+    return this._get("/cloud-providers", undefined, options);
+  }
 }
 
 export class CloudConnections extends APIResource {
@@ -54,9 +79,13 @@ export class CloudConnections extends APIResource {
   }
 
   /**
-   * Starts a connection. Its `setup` holds the CloudFormation template (and,
+   * Starts a connection to `provider` (`aws` when left out). Its `setup` says
+   * what to run in your cloud: for AWS, the CloudFormation template (and,
    * when offered, a one-click `quick_create_url`) that creates the read-only
-   * role in your AWS account; send the stack's `RoleArn` output with `update`.
+   * role, whose `RoleArn` output you send with `update`; for Google Cloud,
+   * Azure and Huawei Cloud, a script whose output you send as `gcp`, `azure`
+   * or `huawei` with `update`; for agent providers, how to make a read-only
+   * token, then `enrollAgent`.
    */
   create(body: B<"createCloudConnection">, options?: RequestOptions): Promise<R<"createCloudConnection">> {
     return this._post("/cloud-connections", body, options);
@@ -66,7 +95,10 @@ export class CloudConnections extends APIResource {
     return this._get(path`/cloud-connections/${connectionId}`, undefined, options);
   }
 
-  /** Renames the connection, sets its `role_arn`, or retries a failed check (`retry: true`). */
+  /**
+   * Renames the connection, sets its `role_arn` (AWS) or its `gcp`, `azure`
+   * or `huawei` federation details, or retries a failed check (`retry: true`).
+   */
   update(
     connectionId: string,
     body: B<"updateCloudConnection">,
@@ -81,9 +113,27 @@ export class CloudConnections extends APIResource {
   }
 
   /**
+   * For a connection read by the Pantech Migrate agent: a one-time enrollment
+   * code, valid once for an hour and shown only in this response. Run its
+   * `enroll_command` where the agent will run. Each call issues a new code
+   * (replacing any unused one), so it is sent once and not retried.
+   */
+  enrollAgent(connectionId: string, options?: RequestOptions): Promise<R<"createCloudAgentEnrollment">> {
+    return this._post(path`/cloud-connections/${connectionId}/agent-enrollments`, undefined, options, {
+      noRetry: true,
+    });
+  }
+
+  /** Ends the connection's agent at once; the connection waits for a new one. Revoking again changes nothing. */
+  revokeAgent(connectionId: string, options?: RequestOptions): Promise<R<"revokeCloudAgent">> {
+    return this._delete(path`/cloud-connections/${connectionId}/agent`, options);
+  }
+
+  /**
    * Polls the connection until it is `connected` (resolves with it) or its
-   * check fails (rejects with CloudFailedError). Set the role ARN with
-   * `update` first. Default timeout 10 minutes, polling every 5 seconds.
+   * check fails (rejects with CloudFailedError). Set the role ARN or the
+   * federation details with `update`, or enroll the agent, first. Default
+   * timeout 10 minutes, polling every 5 seconds.
    */
   wait(connectionId: string, options: WaitOptions<CloudConnection> = {}): Promise<CloudConnection> {
     return poll(
@@ -181,5 +231,266 @@ export class Migrations extends APIResource {
   /** The plan's planned items as Terraform: `main.tf` and `variables.tf`. */
   exportTerraform(migrationId: string, options?: RequestOptions): Promise<R<"exportMigrationTerraform">> {
     return this._get(path`/migrations/${migrationId}/terraform`, undefined, options);
+  }
+
+  /**
+   * Sends Pantech invites to the people the plan lists (items of kind
+   * `user`), by key, each with its item's role. Safe to repeat: anyone
+   * already invited or already a member is reported, never invited twice.
+   */
+  sendInvites(
+    migrationId: string,
+    body: B<"sendMigrationInvites">,
+    options?: RequestOptions,
+  ): Promise<R<"sendMigrationInvites">> {
+    return this._post(path`/migrations/${migrationId}/invites`, body, options);
+  }
+}
+
+export class CopyAccessResource extends APIResource {
+  /** The connection's copy access: the chosen buckets, the copy role and its last verification, and its template. */
+  get(connectionId: string, options?: RequestOptions): Promise<R<"getCopyAccess">> {
+    return this._get(path`/cloud-connections/${connectionId}/copy-access`, undefined, options);
+  }
+
+  /**
+   * Chooses the buckets Pantech may copy (`buckets`, needed the first time)
+   * and returns the CloudFormation template for a copy role that may read
+   * only those. Deploy it, then set `role_arn` to its `CopyRoleArn` output;
+   * `retry: true` verifies again.
+   */
+  set(connectionId: string, body: B<"putCopyAccess">, options?: RequestOptions): Promise<R<"putCopyAccess">> {
+    return this._put(path`/cloud-connections/${connectionId}/copy-access`, body, options);
+  }
+}
+
+export class BucketImports extends APIResource {
+  /** The organization's bucket imports, newest first. */
+  list(params: L<"listBucketImports"> = {}, options?: RequestOptions): Promise<R<"listBucketImports">> {
+    return this._get("/bucket-imports", params, options);
+  }
+
+  listAll(params: LA<"listBucketImports"> = {}, options?: RequestOptions): AsyncGenerator<I<"listBucketImports">> {
+    return this._listAll("/bucket-imports", params, options);
+  }
+
+  /**
+   * Copies one source bucket (with verified copy access) into a new Pantech
+   * bucket (`destination_bucket_name`) or one you have (`destination_bucket_id`).
+   * Nothing is deleted on either side. Follow it with `get`.
+   */
+  start(body: B<"startBucketImport">, options?: RequestOptions): Promise<R<"startBucketImport">> {
+    return this._post("/bucket-imports", body, options);
+  }
+
+  /** An import's status and progress, the first objects that failed it, and its audit trail. */
+  get(importId: string, options?: RequestOptions): Promise<R<"getBucketImport">> {
+    return this._get(path`/bucket-imports/${importId}`, undefined, options);
+  }
+
+  /** Stops the import: a queued one at once, a running one at its next checkpoint. Objects already copied stay. */
+  cancel(importId: string, options?: RequestOptions): Promise<R<"cancelBucketImport">> {
+    return this._post(path`/bucket-imports/${importId}/cancel`, undefined, options);
+  }
+
+  /**
+   * Queues another pass that copies only what changed. `mirror_deletes: true`
+   * (that pass only, needs the `delete` scope) also deletes the objects this
+   * import copied that the source no longer has.
+   */
+  resync(
+    importId: string,
+    body: B<"resyncBucketImport"> = {},
+    options?: RequestOptions,
+  ): Promise<R<"resyncBucketImport">> {
+    return this._post(path`/bucket-imports/${importId}/resync`, body, options);
+  }
+}
+
+export class ServerCopies extends APIResource {
+  /** Every server copy in your organization, newest first, with its progress. */
+  list(params: L<"listServerCopies"> = {}, options?: RequestOptions): Promise<R<"listServerCopies">> {
+    return this._get("/server-copies", params, options);
+  }
+
+  listAll(params: LA<"listServerCopies"> = {}, options?: RequestOptions): AsyncGenerator<I<"listServerCopies">> {
+    return this._listAll("/server-copies", params, options);
+  }
+
+  /**
+   * Starts copying one planned server's disks (`item_key`) into a new Pantech
+   * instance. The first pass copies every disk; `sync` copies what changed and
+   * `cutOver` runs the last pass and builds the instance. `source` is `agent`
+   * (the default) or `aws_snapshot`, with a copy role from `getTemplate`.
+   */
+  start(migrationId: string, body: B<"startServerCopy">, options?: RequestOptions): Promise<R<"startServerCopy">> {
+    return this._post(path`/migrations/${migrationId}/server-copies`, body, options);
+  }
+
+  /**
+   * The CloudFormation template of the AWS copy role for one planned server
+   * (`item_key`); with `create_snapshots: true` it may also snapshot that
+   * server's own volumes.
+   */
+  getTemplate(
+    migrationId: string,
+    params: Q<"getServerCopyTemplate">,
+    options?: RequestOptions,
+  ): Promise<R<"getServerCopyTemplate">> {
+    return this._get(path`/migrations/${migrationId}/server-copy-template`, params, options);
+  }
+
+  /** A copy's status, pre-flight findings, running pass and progress, and the instance once it is being created. */
+  get(copyId: string, options?: RequestOptions): Promise<R<"getServerCopy">> {
+    return this._get(path`/server-copies/${copyId}`, undefined, options);
+  }
+
+  /** Asks for a pass that copies only what changed. An AWS copy that makes no snapshots names each disk's new one in `snapshots`. */
+  sync(copyId: string, body: B<"syncServerCopy"> = {}, options?: RequestOptions): Promise<R<"syncServerCopy">> {
+    return this._post(path`/server-copies/${copyId}/sync`, body, options);
+  }
+
+  /** Asks for the last pass, then builds the instance. Stop the application first. */
+  cutOver(
+    copyId: string,
+    body: B<"cutOverServerCopy"> = {},
+    options?: RequestOptions,
+  ): Promise<R<"cutOverServerCopy">> {
+    return this._post(path`/server-copies/${copyId}/cutover`, body, options);
+  }
+
+  /** Stops the copy and deletes what Pantech staged for it. Refused once the instance is being created. */
+  cancel(copyId: string, body: B<"cancelServerCopy"> = {}, options?: RequestOptions): Promise<R<"cancelServerCopy">> {
+    return this._post(path`/server-copies/${copyId}/cancel`, body, options);
+  }
+}
+
+export class DatabaseImports extends APIResource {
+  /** Your organization's database imports, newest first, without their tables. */
+  list(params: L<"listDatabaseImports"> = {}, options?: RequestOptions): Promise<R<"listDatabaseImports">> {
+    return this._get("/database-imports", params, options);
+  }
+
+  listAll(params: LA<"listDatabaseImports"> = {}, options?: RequestOptions): AsyncGenerator<I<"listDatabaseImports">> {
+    return this._listAll("/database-imports", params, options);
+  }
+
+  /**
+   * Starts moving one of the plan's databases (`item_key`) into one of your
+   * Pantech databases, through the Migrate agent, which keeps the source's
+   * credentials. `dump` copies once; `replicate` (PostgreSQL) follows changes
+   * until you cut over.
+   */
+  start(
+    migrationId: string,
+    body: B<"startDatabaseImport">,
+    options?: RequestOptions,
+  ): Promise<R<"startDatabaseImport">> {
+    return this._post(path`/migrations/${migrationId}/database-imports`, body, options);
+  }
+
+  /** An import with its readiness report, per-table progress and verification. */
+  get(importId: string, options?: RequestOptions): Promise<R<"getDatabaseImport">> {
+    return this._get(path`/database-imports/${importId}`, undefined, options);
+  }
+
+  /** Runs the pre-flight again, for example after fixing what it reported. Allowed before the copy starts. */
+  checkReadiness(importId: string, options?: RequestOptions): Promise<R<"checkDatabaseImportReadiness">> {
+    return this._post(path`/database-imports/${importId}/readiness`, undefined, options);
+  }
+
+  /** Finishes the import. For `replicate`, stop writes to the source first. */
+  cutOver(importId: string, options?: RequestOptions): Promise<R<"cutOverDatabaseImport">> {
+    return this._post(path`/database-imports/${importId}/cutover`, undefined, options);
+  }
+
+  /** Stops the import and removes its access to your Pantech database. What was copied stays. */
+  cancel(importId: string, options?: RequestOptions): Promise<R<"cancelDatabaseImport">> {
+    return this._post(path`/database-imports/${importId}/cancel`, undefined, options);
+  }
+
+  /** Removes the import's login and access from your Pantech database now, keeping the data. */
+  revokeAccess(importId: string, options?: RequestOptions): Promise<R<"revokeDatabaseImportAccess">> {
+    return this._post(path`/database-imports/${importId}/revoke-access`, undefined, options);
+  }
+}
+
+export class KubernetesMoves extends APIResource {
+  /** Your organization's moves, newest first, without their resources and volumes. */
+  list(params: L<"listKubernetesMoves"> = {}, options?: RequestOptions): Promise<R<"listKubernetesMoves">> {
+    return this._get("/kubernetes-moves", params, options);
+  }
+
+  listAll(params: LA<"listKubernetesMoves"> = {}, options?: RequestOptions): AsyncGenerator<I<"listKubernetesMoves">> {
+    return this._listAll("/kubernetes-moves", params, options);
+  }
+
+  /**
+   * Starts moving a plan's `kubernetes_cluster` item into one of your running
+   * Pantech clusters. Secrets move only with `include_secrets`, volume data
+   * only with `copy_volumes`. Then `preview`, `apply`, and `cutOver`.
+   */
+  start(
+    migrationId: string,
+    body: B<"startKubernetesMove">,
+    options?: RequestOptions,
+  ): Promise<R<"startKubernetesMove">> {
+    return this._post(path`/migrations/${migrationId}/kubernetes-moves`, body, options);
+  }
+
+  /** The manifests to apply to the source cluster: a read-only reader, and optional Secrets reader and volume copier roles. */
+  getSourceAccess(options?: RequestOptions): Promise<R<"getKubernetesMoveSourceAccess">> {
+    return this._get("/kubernetes-moves/source-access", undefined, options);
+  }
+
+  /** A move with its report: every source object and what the move does with it, the volumes, images and held workloads. */
+  get(moveId: string, options?: RequestOptions): Promise<R<"getKubernetesMove">> {
+    return this._get(path`/kubernetes-moves/${moveId}`, undefined, options);
+  }
+
+  /** Queues a server-side dry run against the target cluster. `allow_privileged` names refused workloads to include anyway. */
+  preview(
+    moveId: string,
+    body: B<"previewKubernetesMove"> = {},
+    options?: RequestOptions,
+  ): Promise<R<"previewKubernetesMove">> {
+    return this._post(path`/kubernetes-moves/${moveId}/preview`, body, options);
+  }
+
+  /** Queues the apply of what the last successful preview checked. */
+  apply(moveId: string, options?: RequestOptions): Promise<R<"applyKubernetesMove">> {
+    return this._post(path`/kubernetes-moves/${moveId}/apply`, undefined, options);
+  }
+
+  /** Queues the next copy of every volume; only what changed is sent. */
+  syncVolumes(moveId: string, options?: RequestOptions): Promise<R<"syncKubernetesMoveVolumes">> {
+    return this._post(path`/kubernetes-moves/${moveId}/sync-volumes`, undefined, options);
+  }
+
+  /**
+   * Once writes on the source have stopped (`source_writes_stopped: true`),
+   * takes the final copy of every volume and scales the held workloads up.
+   */
+  cutOver(
+    moveId: string,
+    body: B<"cutoverKubernetesMove">,
+    options?: RequestOptions,
+  ): Promise<R<"cutoverKubernetesMove">> {
+    return this._post(path`/kubernetes-moves/${moveId}/cutover`, body, options);
+  }
+
+  /** Stops the move and removes its copy pods, staged data and export. Objects already applied stay. */
+  cancel(moveId: string, options?: RequestOptions): Promise<R<"cancelKubernetesMove">> {
+    return this._post(path`/kubernetes-moves/${moveId}/cancel`, undefined, options);
+  }
+
+  /** The transformed manifests as one YAML file, for GitOps. Secret values are never included. */
+  downloadManifests(moveId: string, options?: RequestOptions): Promise<string> {
+    return this._request(
+      "GET",
+      path`/kubernetes-moves/${moveId}/manifests`,
+      { responseType: "text" },
+      { ...options, headers: { Accept: "application/yaml", ...options?.headers } },
+    );
   }
 }
