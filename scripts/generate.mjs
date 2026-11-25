@@ -23,6 +23,20 @@ for (const file of pendingFiles.filter((f) => f.endsWith(".yaml")).sort()) {
   mergePending(doc, parse(readFileSync(join("spec/pending", file), "utf8")));
 }
 const skip = new Set(Object.keys(JSON.parse(readFileSync("scripts/not-in-sdk.json", "utf8"))));
+renameOperations(doc, JSON.parse(readFileSync("scripts/renamed-operations.json", "utf8")));
+
+/**
+ * Gives the operations scripts/renamed-operations.json names ("METHOD /path")
+ * the SDK's own operationId, where the spec repeats one id on two routes.
+ */
+function renameOperations(target, renamed) {
+  for (const [route, id] of Object.entries(renamed)) {
+    if (route.startsWith("$")) continue;
+    const [method, path] = route.split(" ");
+    const op = target.paths?.[path]?.[method.toLowerCase()];
+    if (op) op.operationId = id;
+  }
+}
 
 /**
  * Adds a pending file's operations and components wherever the spec has none

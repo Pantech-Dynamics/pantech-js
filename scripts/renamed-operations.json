@@ -1,0 +1,4 @@
+{
+  "$comment": "The published spec gives PUT /buckets/{bucket_id}/objects/lock the same operationId as PUT /buckets/{bucket_id}/object-lock (putBucketObjectLock). The SDK keeps its own name for the object's lock. Remove an entry once the spec's ids are unique.",
+  "PUT /public/v1/buckets/{bucket_id}/objects/lock": "setBucketObjectLock"
+}

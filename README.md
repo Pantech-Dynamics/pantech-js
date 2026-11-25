@@ -86,7 +86,9 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 | Operations | `operations.get(id)`, `operations.wait(id)`, `operations.stream(id)` |
 
 Every operation in the public spec has a method, except agent sessions, which answer only AI apps
-connected through Pantech's MCP server; `test/coverage.test.ts` fails if one is missing.
+connected through Pantech's MCP server, and the functions, email, instance password reset and
+database CA certificate endpoints, which have no method yet (`scripts/not-in-sdk.json`);
+`test/coverage.test.ts` fails if one is missing.
 For anything else, `client.request({ method, path, query, body })` sends a raw request with the
 same auth, retries and errors.
 
@@ -187,7 +189,9 @@ price comparison and a Terraform export. Nothing is created on Pantech until you
 Terraform or start a copy. `migrate.providers.list()` names every cloud it can read and how:
 AWS, Google Cloud, Azure and Huawei Cloud are `federated` (Pantech signs short-lived tokens your
 cloud trusts, so no keys are shared); DigitalOcean, Hetzner, Linode, Vultr, Contabo and OpenStack
-are read by the Pantech Migrate `agent`, which keeps your read-only token on your machine.
+are read by the Pantech Migrate `agent`, which keeps your read-only token on your machine. Any
+connection, federated ones included, can have one agent for the copy steps that read from inside
+your network: server copies, database imports and Kubernetes moves.
 
 ```ts
 let conn = await client.migrate.connections.create({ name: "Production AWS" });
@@ -219,8 +223,8 @@ const { enroll_command } = await client.migrate.connections.enrollAgent(hetzner.
 await client.migrate.connections.wait(hetzner.id); // connected once the agent has enrolled
 ```
 
-`enrollAgent` is sent once and never retried, since each call issues a new code;
-`revokeAgent(id)` ends the agent at once. A plan lists the people it found as items of kind
+`enrollAgent` works on every connection and is sent once and never retried, since each call
+issues a new code; `revokeAgent(id)` ends the agent at once. A plan lists the people it found as items of kind
 `user`; `migrate.migrations.sendInvites(planId, { keys })` invites them with their roles, and is
 safe to repeat.
 
