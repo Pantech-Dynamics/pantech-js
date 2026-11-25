@@ -58,6 +58,9 @@ npm test
 Add a method for any new operation, add it to the table in `test/coverage.test.ts`, and commit
 the generated files. An operation the SDK deliberately leaves out goes in
 `scripts/not-in-sdk.json` instead, with the reason; `npm run generate` then leaves out its types.
+Where the spec gives two routes the same operationId, `scripts/renamed-operations.json` names one
+of them (`"METHOD /public/v1/path": "operationId"`) for the generator and the coverage test; remove
+the entry once the spec's ids are unique.
 
 Endpoints the API serves before the published spec describes them go in `spec/pending/*.yaml`
 (paths and the components they use). `npm run generate` and the coverage test merge them in only

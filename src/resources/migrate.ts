@@ -113,10 +113,14 @@ export class CloudConnections extends APIResource {
   }
 
   /**
-   * For a connection read by the Pantech Migrate agent: a one-time enrollment
-   * code, valid once for an hour and shown only in this response. Run its
-   * `enroll_command` where the agent will run. Each call issues a new code
-   * (replacing any unused one), so it is sent once and not retried.
+   * A one-time enrollment code for the connection's Pantech Migrate agent,
+   * valid once for an hour and shown only in this response. Any connection may
+   * have an agent: on AWS, Google Cloud, Azure and Huawei Cloud it runs server
+   * copies, database imports and Kubernetes moves (Pantech scans those clouds
+   * itself); on the other clouds it scans too. A connection has one agent, so
+   * using the code replaces the earlier one. Run its `enroll_command` where the
+   * agent will run. Each call issues a new code (replacing any unused one), so
+   * it is sent once and not retried.
    */
   enrollAgent(connectionId: string, options?: RequestOptions): Promise<R<"createCloudAgentEnrollment">> {
     return this._post(path`/cloud-connections/${connectionId}/agent-enrollments`, undefined, options, {
@@ -124,7 +128,10 @@ export class CloudConnections extends APIResource {
     });
   }
 
-  /** Ends the connection's agent at once; the connection waits for a new one. Revoking again changes nothing. */
+  /**
+   * Ends the connection's agent at once, and any server copy upload it was
+   * running; the connection waits for a new one. Revoking again changes nothing.
+   */
   revokeAgent(connectionId: string, options?: RequestOptions): Promise<R<"revokeCloudAgent">> {
     return this._delete(path`/cloud-connections/${connectionId}/agent`, options);
   }

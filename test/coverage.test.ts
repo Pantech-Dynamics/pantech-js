@@ -413,6 +413,16 @@ function loadSpec(): { paths: PathItems } {
       for (const [key, value] of Object.entries(item)) doc.paths[route][key] ??= value;
     }
   }
+  // Where the spec repeats an operationId on two routes, the SDK names one itself (as generate.mjs does).
+  const renamed: Record<string, string> = JSON.parse(
+    readFileSync(new URL("../scripts/renamed-operations.json", import.meta.url), "utf8"),
+  );
+  for (const [route, id] of Object.entries(renamed)) {
+    if (route.startsWith("$")) continue;
+    const [method = "", path = ""] = route.split(" ");
+    const op = doc.paths[path]?.[method.toLowerCase()] as { operationId?: string } | undefined;
+    if (op) op.operationId = id;
+  }
   return doc;
 }
 

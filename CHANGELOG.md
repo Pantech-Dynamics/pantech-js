@@ -6,6 +6,21 @@ until then.
 
 ## Unreleased
 
+## 0.6.1 (2026-11-25)
+
+- The vendored spec is the one now published, and the `spec/pending` files it covers are gone; the
+  types are regenerated from it. `migrate.connections.enrollAgent` and `revokeAgent` work on every
+  connection: AWS, Google Cloud, Azure and Huawei Cloud connections can have an agent too, for
+  server copies, database imports and Kubernetes moves (Pantech still scans those clouds itself),
+  and enrollment no longer answers `409 CLOUD_CONNECTION_NOT_AGENT`. The doc comments say a
+  connection has one agent, and that revoking it also ends its server copy uploads in progress.
+- The published spec gives two routes the id `putBucketObjectLock`; the SDK keeps its names
+  (`setBucketObjectLock` for an object's lock, `putBucketObjectLock` for the bucket's default) through
+  `scripts/renamed-operations.json`, so no type changes name.
+- Operations in the published spec the SDK does not wrap yet (functions, email, instance password
+  reset and the database CA certificate) are listed in `scripts/not-in-sdk.json`; call them with
+  `client.request`.
+
 ## 0.6.0 (2026-11-25)
 
 - Pantech Migrate reads every cloud it supports, not only AWS: `migrate.providers.list()` lists
