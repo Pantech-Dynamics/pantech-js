@@ -6,6 +6,31 @@ until then.
 
 ## Unreleased
 
+## 0.6.0 (2026-11-25)
+
+- Pantech Migrate reads every cloud it supports, not only AWS: `migrate.providers.list()` lists
+  them and how each is read (`federated` for AWS, Google Cloud, Azure and Huawei Cloud; `agent`
+  for DigitalOcean, Hetzner, Linode, Vultr, Contabo and OpenStack). `migrate.connections.create`
+  takes a `provider`, `update` takes `gcp`, `azure` or `huawei` federation details, and
+  connections and scans report `external_account_id`, connections their `agent` and the provider's
+  `setup`, and scans their `provider` and `runner`.
+- The Pantech Migrate agent: `migrate.connections.enrollAgent` (a one-time code, sent once and
+  never retried, since each call issues a new one) and `migrate.connections.revokeAgent`.
+- People: a scan's `users` say where each person comes from (`source`), their `access_level` and
+  their `roles`, and `migrate.migrations.sendInvites` invites a plan's `user` items with their
+  roles. Plan item targets carry `image_slug` (Windows Server, on request) and `invite_id`.
+- Buckets: `migrate.copyAccess` (`get`, `set`) and `migrate.bucketImports` (`list`, `listAll`,
+  `start`, `get`, `cancel`, `resync` with optional `mirror_deletes`).
+- Servers: `migrate.serverCopies` (`start`, `getTemplate` for the AWS copy role, `list`, `listAll`,
+  `get`, `sync`, `cutOver`, `cancel`).
+- Databases: `migrate.databaseImports` (`start`, `list`, `listAll`, `get`, `checkReadiness`,
+  `cutOver`, `cancel`, `revokeAccess`).
+- Kubernetes: `migrate.kubernetesMoves` (`start`, `list`, `listAll`, `getSourceAccess`, `get`,
+  `preview`, `apply`, `syncVolumes`, `cutOver`, `cancel`, and `downloadManifests`, which returns
+  the YAML as a string). Scans report `kubernetes_clusters`, plans have `kubernetes_cluster` items,
+  and `migrate.migrations.updateItem` takes `allow_version_downgrade`.
+- Type aliases for every new schema, such as `CloudProvider`, `CloudAgentEnrollment`, `CopyAccess`,
+  `BucketImport`, `ServerCopy`, `DatabaseImport`, `KubernetesMove` and `KubernetesMoveDetail`.
 - `databases.getSnapshotSchedule` and `databases.setSnapshotSchedule`: automatic snapshots of a
   database's data disk, as for instances and volumes.
 
