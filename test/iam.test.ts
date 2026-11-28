@@ -47,7 +47,8 @@ describe("iam statement builders", () => {
 
   it("lists Pantech's managed policies", () => {
     expect(iam.MANAGED_POLICY_IDS).toContain("pol_pantech_read_only");
-    expect(iam.MANAGED_POLICY_IDS).toHaveLength(12);
+    expect(iam.MANAGED_POLICY_IDS).toContain("pol_pantech_migrate_manager");
+    expect(iam.MANAGED_POLICY_IDS).toHaveLength(18);
   });
 });
 
