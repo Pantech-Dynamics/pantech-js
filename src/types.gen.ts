@@ -1380,6 +1380,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/object-storage/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Change object storage settings
+     * @description Turns Block All Public Access on or off for your organization. On, public prefixes and public objects stop being served anonymously within seconds, and making anything public is refused with `PUBLIC_ACCESS_BLOCKED`. Off, the public prefixes and objects already set are served again. Sending the current value changes nothing.
+     *
+     *     **Idempotency:** setting a value is safe to retry: a retry sets the same value again.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateObjectStorageSettings"];
+    trace?: never;
+  };
   "/public/v1/buckets/{bucket_id}/stats": {
     parameters: {
       query?: never;
@@ -1556,6 +1580,32 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/buckets/{bucket_id}/objects/upload-form": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a browser upload form
+     * @description Signs an HTML form upload (an S3 POST policy) into the bucket, so a browser can send a file straight to storage without your server handling the bytes. Post every returned field, then the file as a field named `file` (it must come last), as `multipart/form-data` to `url`.
+     *
+     *     The form allows one object per upload: either exactly `key`, or any key starting with `key_prefix`, where the browser's file name replaces `${filename}` in the `key` field. Each upload must be between `min_bytes` and `max_bytes`, and, when `content_type` is set, must send that `Content-Type` field unchanged. The form stops working at `expires_at`. Uploaded objects are private, and the bucket's size limit applies.
+     *
+     *     Anyone holding the form can upload within its bounds until it expires, so keep its lifetime short.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createBucketUploadForm"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/buckets/{bucket_id}/objects/folder": {
     parameters: {
       query?: never;
@@ -1688,6 +1738,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/buckets/{bucket_id}/objects/restore-version": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Restore a previous object version or remove a delete marker
+     * @description Restores a historical object version as the current latest version, or removes a delete marker to undelete a soft-deleted versioned object.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["restoreBucketObjectVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/objects/multipart": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List in-progress multipart uploads
+     * @description Lists active in-progress multipart uploads in the bucket so abandoned uploads can be inspected and aborted.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listBucketMultipartUploads"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/buckets/{bucket_id}/objects/multipart/start": {
     parameters: {
       query?: never;
@@ -1726,6 +1820,28 @@ export interface paths {
      *     **Scope:** `write`.
      */
     post: operations["signBucketMultipartPart"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/objects/multipart/sign-parts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Batch-sign direct upload URLs for multiple multipart parts
+     * @description Returns short-lived signed PUT URLs for up to 100 multipart parts in a single request.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["signBucketMultipartParts"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1908,6 +2024,190 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/shared": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List shared buckets
+     * @description Lists buckets shared with your organization by other Pantech organizations.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listSharedBuckets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/shares": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List bucket shares
+     * @description Lists active cross-organization shares configured on a bucket.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listBucketShares"];
+    put?: never;
+    /**
+     * Share bucket with another organization
+     * @description Grants another organization read_only, write_only, or read_write access to this bucket or specific key prefixes.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createBucketShare"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/shares/{share_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke a bucket share
+     * @description Revokes another organization's cross-account access to this bucket.
+     *
+     *     **Scope:** `delete`.
+     */
+    delete: operations["revokeBucketShare"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/notifications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List bucket event notifications
+     * @description Lists object event notification rules configured on this bucket.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listBucketNotifications"];
+    put?: never;
+    /**
+     * Create a bucket notification rule
+     * @description Subscribes a webhook endpoint or function to object created or removed events in this bucket.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createBucketNotification"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/notifications/{notification_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a bucket notification rule
+     * @description Deletes an object notification rule.
+     *
+     *     **Scope:** `delete`.
+     */
+    delete: operations["deleteBucketNotification"];
+    options?: never;
+    head?: never;
+    /**
+     * Update a bucket notification rule
+     * @description Updates events, prefix/suffix filters, or enabled state of a notification rule.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateBucketNotification"];
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/domains": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List bucket custom domains
+     * @description Lists custom domain bindings and static website settings on a bucket.
+     *
+     *     **Scope:** `read`.
+     */
+    get: operations["listBucketDomains"];
+    put?: never;
+    /**
+     * Attach a custom domain to a bucket
+     * @description Binds a custom hostname with a Certificate Manager TLS certificate and static website settings.
+     *
+     *     **Scope:** `write`.
+     */
+    post: operations["createBucketDomain"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/buckets/{bucket_id}/domains/{domain_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Detach a bucket custom domain
+     * @description Detaches a custom domain from a bucket.
+     *
+     *     **Scope:** `delete`.
+     */
+    delete: operations["deleteBucketDomain"];
+    options?: never;
+    head?: never;
+    /**
+     * Update a bucket custom domain
+     * @description Updates the TLS certificate or static website routing/cache settings on a custom domain.
+     *
+     *     **Scope:** `write`.
+     */
+    patch: operations["updateBucketDomain"];
     trace?: never;
   };
   "/public/v1/images": {
@@ -4966,7 +5266,7 @@ export interface paths {
     post?: never;
     /**
      * Revoke a connection's agent
-     * @description Ends the connection's Migrate agent at once: its credential stops working on its next request. The connection waits for a new agent. Like disconnecting, this only takes access away. Owners and admins only.
+     * @description Ends the connection's Migrate agent at once: its credential stops working on its next request, and the server copies, database imports and Kubernetes moves it was running stop until a new agent is enrolled. A connection to a cloud Pantech scans with an agent then waits for a new one; a connection to AWS, Google Cloud, Azure or Huawei Cloud stays connected. Like disconnecting, this only takes access away. Owners and admins only.
      *
      *     **Idempotency:** revoking again changes nothing.
      *
@@ -7112,6 +7412,11 @@ export interface components {
       versioning: boolean;
       /** @description Whether objects can be locked against deletion. Chosen at create only. */
       object_lock: boolean;
+      /**
+       * @description Default server-side encryption applied to new objects (`none` or `sse_s3`).
+       * @enum {string}
+       */
+      encryption?: "none" | "sse_s3";
       /** @description Key prefixes anyone may read without a key, sorted. Empty is wholly private. */
       public_prefixes: string[];
       /**
@@ -7168,6 +7473,11 @@ export interface components {
       versioning?: boolean;
       /** @description Allow objects to be locked against deletion. Only at create, and it turns versioning on. */
       object_lock?: boolean;
+      /**
+       * @description Optional default server-side encryption for new objects (`none` or `sse_s3`).
+       * @enum {string}
+       */
+      encryption?: "none" | "sse_s3";
       /** @description Key prefixes anyone may read without a key, e.g. `public/`. At most 20. */
       public_prefixes?: string[];
     };
@@ -7180,6 +7490,11 @@ export interface components {
       quota_bytes?: number;
       /** @description Keep earlier versions of overwritten and deleted objects. */
       versioning?: boolean;
+      /**
+       * @description Default server-side encryption for newly written objects (`none` or `sse_s3`).
+       * @enum {string}
+       */
+      encryption?: "none" | "sse_s3";
       /** @description Replaces the public prefixes; an empty list makes the bucket wholly private. */
       public_prefixes?: string[];
     };
@@ -7195,6 +7510,8 @@ export interface components {
       beta: boolean;
       /** @description Whether direct-to-bucket presigned uploads are enabled. */
       direct_upload_enabled?: boolean;
+      /** @description Whether Block All Public Access is on: nothing in the organization's buckets can be made public, and public prefixes and public objects stop being served anonymously. Null when object storage is not enabled or the setting could not be read. */
+      block_public_access?: boolean | null;
       limits?: {
         max_buckets?: number;
         /** Format: int64 */
@@ -7213,15 +7530,35 @@ export interface components {
       region: string;
       /** @description The S3 access key id S3 tools sign with. */
       access_key_id: string;
-      /** @description Whether the key may only read and list. */
+      /** @description Whether the key may only read and list. True exactly when `permissions` is `read_only`. */
       read_only: boolean;
+      /**
+       * @description What the key may do: `read_write`, `read_only` (read and list), or `write_only` (upload only; it cannot read, list or delete).
+       * @enum {string}
+       */
+      permissions: "read_write" | "read_only" | "write_only";
       /** @description The bucket names the key may use; empty is every bucket. */
       buckets: string[];
+      /** @description The object key prefixes the key may use, such as `uploads/`; empty is every object. */
+      prefixes: string[];
       /**
        * Format: date-time
        * @description When it was created.
        */
       created_at: string;
+      /**
+       * Format: date-time
+       * @description When the key stops working; null is never.
+       */
+      expires_at: string | null;
+    };
+    ObjectStorageSettings: {
+      /** @description Whether Block All Public Access is on. */
+      block_public_access: boolean;
+    };
+    UpdateObjectStorageSettingsRequest: {
+      /** @description True blocks all public access: public prefixes and public objects stop being served anonymously, and nothing can be made public until it is turned off. False restores the public prefixes and objects already set. */
+      block_public_access: boolean;
     };
     ObjectStorageKeyList: {
       data: components["schemas"]["ObjectStorageKey"][];
@@ -7241,10 +7578,28 @@ export interface components {
       name: string;
       /** @description The region code. Defaults to the region object storage is offered in. */
       region?: string;
-      /** @description Allow only reading and listing. */
+      /** @description Allow only reading and listing. The same as `permissions: read_only`; cannot be true with another `permissions` value. */
       read_only?: boolean;
+      /**
+       * @description What the key may do. Defaults to `read_write`, or `read_only` when `read_only` is true. `write_only` may upload but not read, list or delete, for devices and upload forms.
+       * @enum {string}
+       */
+      permissions?: "read_only" | "read_write" | "write_only";
       /** @description Limit the key to these bucket names; absent or empty is every bucket. At most 100. */
       buckets?: string[];
+      /**
+       * @description Limit the key to object keys under these prefixes, such as `uploads/`; absent or empty is every object. At most 20, each 1 to 512 characters, not starting with `/` and without `*` or `?`.
+       * @example [
+       *       "uploads/"
+       *     ]
+       */
+      prefixes?: string[];
+      /**
+       * Format: date-time
+       * @description When the key stops working, RFC 3339, in the future and at most 10 years ahead. Absent never expires. An expired key is revoked.
+       * @example 2027-01-01T00:00:00Z
+       */
+      expires_at?: string;
     };
     UpdateLoadBalancerRequest: {
       /**
@@ -9871,14 +10226,14 @@ export interface components {
       permissions: string[];
       agent: components["schemas"]["CloudAgentSetup"];
     };
-    /** @description How to run the Pantech Migrate agent; null for federated providers. */
+    /** @description How to run the connection's Pantech Migrate agent. Every connection may have one: for AWS, Google Cloud, Azure and Huawei Cloud it runs server copies, database imports and Kubernetes moves and needs no cloud credential (`token_variables` is empty); for the other clouds it also scans, with your read-only credential. Null when the agent is not available. */
     CloudAgentSetup: {
       /** @description The agent's container image. */
       image: string;
       /** @description Where the agent's binaries are published. */
       download_url: string | null;
       api_url: string;
-      /** @description The environment variables the agent reads your read-only credential from, on your machine. It is never sent to Pantech. */
+      /** @description The environment variables the agent reads your read-only credential from, on your machine. It is never sent to Pantech. Empty for AWS, Google Cloud, Azure and Huawei Cloud, where Pantech scans without one. */
       token_variables: string[];
       token_how_to: string;
       /** @description Contains `<ENROLLMENT_CODE>` where the one-time code goes. */
@@ -9943,7 +10298,7 @@ export interface components {
         | "openstack";
       name: string;
       /**
-       * @description `awaiting_role` (federated providers: waiting for what the setup printed), `awaiting_agent` (agent providers: no agent enrolled), `verifying`, `connected` or `failed`.
+       * @description `awaiting_role` (federated providers: waiting for what the setup printed), `awaiting_agent` (other clouds: no agent enrolled; on AWS, Google Cloud, Azure and Huawei Cloud an agent never changes the status), `verifying`, `connected` or `failed`.
        * @enum {string}
        */
       status: "awaiting_role" | "awaiting_agent" | "verifying" | "connected" | "failed";
@@ -17029,7 +17384,7 @@ export interface operations {
         };
       };
       /**
-       * @description `BUCKET_NAME_TAKEN`: the organization already has a bucket with that name in this region. A deleted bucket's name is free again once its removal finishes.
+       * @description `BUCKET_NAME_TAKEN`: a bucket with that name already exists in this region, in this organization or another. Bucket names are shared by every organization. A deleted bucket's name is free again once its removal finishes.
        *     `IDEMPOTENCY_CONFLICT`: that idempotency key was already used for a different request.
        *     `ACCOUNT_SUSPENDED`: the account has an overdue invoice. Pay it under Billing in the console, then try again.
        *     `ACCOUNT_NOT_ACTIVE`: billing setup is not finished. Finish it under Billing in the console, then try again.
@@ -17651,6 +18006,71 @@ export interface operations {
       429: components["responses"]["RateLimited"];
     };
   };
+  updateObjectStorageSettings: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateObjectStorageSettingsRequest"];
+      };
+    };
+    responses: {
+      /** @description The setting now in force. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ObjectStorageSettings"];
+        };
+      };
+      /** @description `IDEMPOTENCY_KEY_REQUIRED`: the `Idempotency-Key` header is missing. `INVALID_REQUEST_BODY`: the body is not a single valid JSON object. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /** @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. `FORBIDDEN`: the member who created the key may not do this. `OBJECT_STORAGE_NOT_ENABLED`: turning the block off needs object storage enabled; turning it on always works. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: `block_public_access` is required. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `OBJECT_STORAGE_UNAVAILABLE`: object storage is not available right now. Retry shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   getBucketStats: {
     parameters: {
       query?: never;
@@ -17789,6 +18209,7 @@ export interface operations {
             /** @enum {string} */
             public_source: "private" | "object" | "bucket_prefix";
             public_url: string;
+            server_side_encryption?: string;
           };
         };
       };
@@ -17944,6 +18365,117 @@ export interface operations {
       };
       401: components["responses"]["Unauthenticated"];
       429: components["responses"]["RateLimited"];
+    };
+  };
+  createBucketUploadForm: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description The one key the form may write. Give this or `key_prefix`. */
+          key?: string;
+          /** @description The form may write any key starting with this, ending in the browser's file name. Give this or `key`. */
+          key_prefix?: string;
+          /**
+           * Format: int64
+           * @description The smallest file accepted.
+           * @default 0
+           */
+          min_bytes?: number;
+          /**
+           * Format: int64
+           * @description The largest file accepted, at most 5 GiB.
+           * @default 5368709120
+           */
+          max_bytes?: number;
+          /** @description When set, the only content type the form may send. */
+          content_type?: string;
+          /**
+           * Format: int64
+           * @description How long the form works: 60 seconds to 7 days.
+           * @default 3600
+           */
+          expires_in_seconds?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description The form to post. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Where to POST the form. */
+            url: string;
+            /** @description Form fields to send before the file, as given. */
+            fields: {
+              [key: string]: string;
+            };
+            /** Format: date-time */
+            expires_at: string;
+            bucket_name: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      /** @description `INSUFFICIENT_SCOPE`: the API key lacks the `write` scope. `FORBIDDEN`: the member who created the key may not write objects to this bucket. `OBJECT_STORAGE_SUSPENDED`: object storage is suspended for this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `BUCKET_NOT_FOUND`: no such bucket in your organization. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `BUCKET_NOT_ACTIVE`: the bucket is still being created. `IDEMPOTENCY_CONFLICT`: the key was used for a different request. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description `VALIDATION_FAILED`: give exactly one of `key` and `key_prefix`; `max_bytes`, `min_bytes`, `expires_in_seconds` or `content_type` is out of range. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      429: components["responses"]["RateLimited"];
+      /** @description `UPLOAD_FORMS_UNAVAILABLE`: form uploads are not available in this region yet. `OBJECT_STORAGE_UNAVAILABLE`: object storage is not available right now. Retry shortly. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
     };
   };
   createBucketFolder: {
@@ -18204,6 +18736,78 @@ export interface operations {
       429: components["responses"]["RateLimited"];
     };
   };
+  restoreBucketObjectVersion: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          key: string;
+          version_id?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Object version restored. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            key: string;
+            /** @enum {string} */
+            action: "copied_version" | "removed_delete_marker";
+            restored_version_id: string;
+            version_id: string;
+            etag: string;
+            last_modified: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  listBucketMultipartUploads: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Active multipart uploads. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            uploads: {
+              key: string;
+              upload_id: string;
+              initiated: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
   startBucketMultipartUpload: {
     parameters: {
       query?: never;
@@ -18280,6 +18884,47 @@ export interface operations {
           "application/json": {
             direct: boolean;
             url: string;
+            expires_in_seconds: number;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  signBucketMultipartParts: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          key: string;
+          upload_id: string;
+          part_numbers: number[];
+        };
+      };
+    };
+    responses: {
+      /** @description Batch of signed part URLs. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            parts: {
+              part_number: number;
+              url: string;
+            }[];
             expires_in_seconds: number;
           };
         };
@@ -18715,6 +19360,381 @@ export interface operations {
       429: components["responses"]["RateLimited"];
     };
   };
+  listSharedBuckets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Buckets shared with this organization. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: Record<string, never>[];
+            next_cursor?: string | null;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  listBucketShares: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bucket shares. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: Record<string, never>[];
+            next_cursor?: string | null;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  createBucketShare: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          grantee_organization_id: string;
+          /** @enum {string} */
+          permissions: "read_only" | "write_only" | "read_write";
+          prefixes?: string[];
+          /** Format: date-time */
+          expires_at?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Share created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": Record<string, never>;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  revokeBucketShare: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+        share_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Share revoked. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  listBucketNotifications: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Notification rules. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: Record<string, never>[];
+            next_cursor?: string | null;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  createBucketNotification: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          events: ("object.created" | "object.removed")[];
+          prefix?: string;
+          suffix?: string;
+          /** @enum {string} */
+          target_type: "webhook" | "function";
+          target_id: string;
+          enabled?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Notification rule created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": Record<string, never>;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  deleteBucketNotification: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Notification rule deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  updateBucketNotification: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          events?: ("object.created" | "object.removed")[];
+          prefix?: string;
+          suffix?: string;
+          enabled?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Notification rule updated. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": Record<string, never>;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  listBucketDomains: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bucket custom domains. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: Record<string, never>[];
+            next_cursor?: string | null;
+          };
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  createBucketDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          hostname: string;
+          certificate_id: string;
+          index_document?: string;
+          error_document?: string;
+          spa_mode?: boolean;
+          cache_ttl_seconds?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Custom domain created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": Record<string, never>;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  deleteBucketDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Custom domain deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
+  updateBucketDomain: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description A unique value per change, e.g. a UUID. Retrying with the same key returns the original result instead of repeating the change; reusing it for a different request is an error. Required on every POST, PUT and DELETE. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+      };
+      path: {
+        bucket_id: string;
+        domain_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          certificate_id?: string;
+          index_document?: string;
+          error_document?: string;
+          spa_mode?: boolean;
+          cache_ttl_seconds?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Custom domain updated. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": Record<string, never>;
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      429: components["responses"]["RateLimited"];
+    };
+  };
   listImages: {
     parameters: {
       query?: never;
@@ -18979,6 +19999,8 @@ export interface operations {
        *     `ACCOUNT_NOT_ACTIVE`: the organization's billing account is not active yet. Finish billing setup in the console (verify the organization and add a payment method), then retry.
        *     `PROVIDER_ACCOUNT_NOT_READY`: your organization's cloud account is still being set up, which takes a few minutes after sign-up. Retry shortly.
        *     `SECURITY_GROUPS_NOT_SUPPORTED_IN_ZONE`: a VPC instance uses its subnet's firewall rules, not a security group. Leave out `security_group_id`.
+       *     `ADDRESS_ROTATION_UNAVAILABLE`: `address_rotation` was set, but dynamic IPs are not available for this plan, image or location right now. Nothing was charged.
+       *     `ADDRESS_ROTATION_NO_ADDRESS`: `address_rotation` was set, but no dynamic IP is free in this location right now. Nothing was charged; retry later, or leave out `address_rotation`.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {
@@ -19566,6 +20588,7 @@ export interface operations {
        * @description `ACCOUNT_SUSPENDED`: an invoice is overdue, or the organization was suspended for non-payment. Pay the outstanding invoice in the console, then retry.
        *     `ACCOUNT_NOT_ACTIVE`: the organization's billing account is not active yet. Finish billing setup in the console (verify the organization and add a payment method), then retry.
        *     `INVALID_RESOURCE_STATE`: the instance cannot do this in its current state, for example while it is being created or deleted. Wait for its current operation to finish, then retry.
+       *     `INSTANCE_HAS_DYNAMIC_IP`: the instance has a dynamic IP on. Turn it off (`DELETE /public/v1/instances/{instance_id}/address-rotation`), then retry.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {
@@ -20327,6 +21350,7 @@ export interface operations {
        * @description `PRIVATE_NETWORK_NOT_ATTACHED`: the instance has no private network interface to remove.
        *     `PRIVATE_NETWORK_CHANGE_IN_PROGRESS`: the interface is being added or removed. Wait for that operation to finish.
        *     `INSTANCE_NOT_SETTLED`: the instance is starting, stopping, resizing, restoring or being deleted. Wait until it is running or stopped, then retry.
+       *     `INSTANCE_HAS_DYNAMIC_IP`: the instance's dynamic IP runs over this interface. Turn the dynamic IP off first.
        *     `CONCURRENT_UPDATE`: the resource changed while this request was being processed. Retry the request; if it repeats, read the resource first.
        */
       409: {

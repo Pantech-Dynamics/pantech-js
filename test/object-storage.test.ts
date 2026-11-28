@@ -340,4 +340,208 @@ describe("object storage and buckets", () => {
     await expect(rateLimited.client.buckets.empty("bkt_1")).resolves.toMatchObject({ deleted_count: 0 });
     expect(rateLimited.calls).toHaveLength(2);
   });
+
+  it("updates org-wide object storage settings and supports scoped keys and bucket encryption", async () => {
+    const { client, calls } = mockClient((c) => {
+      if (c.url.pathname.endsWith("/object-storage/settings")) {
+        return json(200, { block_public_access: true });
+      }
+      if (c.url.pathname.endsWith("/object-storage/keys")) {
+        return json(201, {
+          id: "osk_2",
+          name: "device-upload",
+          region: "af-abj",
+          access_key_id: "AKIA_WRITE_ONLY",
+          secret_access_key: "SECRET_WO",
+          read_only: false,
+          permissions: "write_only",
+          buckets: ["uploads"],
+          prefixes: ["incoming/"],
+          created_at: "2026-11-28T10:00:00Z",
+          expires_at: "2027-01-01T00:00:00Z",
+          endpoint: "https://s3.af-abj.pantechdynamics.com",
+        });
+      }
+      return json(201, { id: "bkt_enc", name: "encrypted", encryption: "sse_s3" });
+    });
+
+    const settings = await client.objectStorage.updateSettings({ block_public_access: true });
+    expect(settings).toEqual({ block_public_access: true });
+
+    const key = await client.objectStorage.keys.create({
+      name: "device-upload",
+      region: "af-abj",
+      permissions: "write_only",
+      buckets: ["uploads"],
+      prefixes: ["incoming/"],
+      expires_at: "2027-01-01T00:00:00Z",
+    });
+    expect(key.permissions).toBe("write_only");
+    expect(key.prefixes).toEqual(["incoming/"]);
+    expect(key.secret_access_key).toBe("SECRET_WO");
+    expect(JSON.stringify(key)).not.toContain("SECRET_WO");
+
+    await client.buckets.create({ name: "encrypted", region: "af-abj", encryption: "sse_s3" });
+    await client.buckets.update("bkt_enc", { encryption: "none" });
+
+    expect(calls.map((c) => `${c.method} ${c.url.pathname}`)).toEqual([
+      "PATCH /public/v1/object-storage/settings",
+      "POST /public/v1/object-storage/keys",
+      "POST /public/v1/buckets",
+      "PATCH /public/v1/buckets/bkt_enc",
+    ]);
+    expect(calls[0]?.headers.get("idempotency-key")).toBeTruthy();
+    expect(calls[0]?.body).toEqual({ block_public_access: true });
+  });
+
+  it("creates browser upload forms, restores object versions, lists multipart uploads, and batch-signs parts", async () => {
+    const keyTemplate = `uploads/\${filename}`;
+    const { client, calls } = mockClient((c) => {
+      if (c.url.pathname.endsWith("/objects/upload-form")) {
+        return json(200, {
+          url: "https://assets.s3.af-abj.pantechdynamics.com",
+          fields: {
+            key: keyTemplate,
+            policy: "base64-policy",
+            "x-amz-signature": "sig123",
+          },
+          expires_at: "2026-11-28T13:00:00Z",
+          bucket_name: "assets",
+        });
+      }
+      if (c.url.pathname.endsWith("/objects/restore-version")) {
+        return json(200, {
+          key: "docs/spec.pdf",
+          action: "copied_version",
+          restored_version_id: "ver_1",
+          version_id: "ver_3",
+          etag: '"etag-restored"',
+          last_modified: "2026-11-28T12:00:00Z",
+        });
+      }
+      if (c.url.pathname.endsWith("/objects/multipart")) {
+        return json(200, {
+          uploads: [{ key: "video.mp4", upload_id: "mpu_9", initiated: "2026-11-28T11:00:00Z" }],
+        });
+      }
+      if (c.url.pathname.endsWith("/objects/multipart/sign-parts")) {
+        return json(200, {
+          parts: [
+            { part_number: 1, url: "https://signed.example/p1" },
+            { part_number: 2, url: "https://signed.example/p2" },
+          ],
+          expires_in_seconds: 900,
+        });
+      }
+      return json(200, {});
+    });
+
+    const form = await client.buckets.objects.createUploadForm("bkt_1", {
+      key_prefix: "uploads/",
+      min_bytes: 1,
+      max_bytes: 10 * 1024 * 1024,
+      content_type: "image/png",
+      expires_in_seconds: 600,
+    });
+    expect(form.bucket_name).toBe("assets");
+    expect(form.fields.key).toBe(keyTemplate);
+
+    const restored = await client.buckets.objects.restoreVersion("bkt_1", {
+      key: "docs/spec.pdf",
+      version_id: "ver_1",
+    });
+    expect(restored.action).toBe("copied_version");
+    expect(restored.version_id).toBe("ver_3");
+
+    const uploads = await client.buckets.multipart.list("bkt_1");
+    expect(uploads.uploads).toHaveLength(1);
+    expect(uploads.uploads[0]?.upload_id).toBe("mpu_9");
+
+    const signed = await client.buckets.multipart.signParts("bkt_1", {
+      key: "video.mp4",
+      upload_id: "mpu_9",
+      part_numbers: [1, 2],
+    });
+    expect(signed.parts).toHaveLength(2);
+    expect(signed.expires_in_seconds).toBe(900);
+
+    expect(calls.map((c) => `${c.method} ${c.url.pathname}`)).toEqual([
+      "POST /public/v1/buckets/bkt_1/objects/upload-form",
+      "POST /public/v1/buckets/bkt_1/objects/restore-version",
+      "GET /public/v1/buckets/bkt_1/objects/multipart",
+      "POST /public/v1/buckets/bkt_1/objects/multipart/sign-parts",
+    ]);
+    expect(calls[0]?.headers.get("idempotency-key")).toBeTruthy();
+    expect(calls[1]?.headers.get("idempotency-key")).toBeTruthy();
+    expect(calls[2]?.headers.has("idempotency-key")).toBe(false);
+    expect(calls[3]?.headers.get("idempotency-key")).toBeTruthy();
+  });
+
+  it("manages shared buckets, bucket shares, notifications, and custom domains", async () => {
+    const { client, calls } = mockClient((c) => {
+      if (c.method === "DELETE") return new Response(null, { status: 204 });
+      if (c.method === "POST") return json(201, { id: "res_1" });
+      if (c.method === "PATCH") return json(200, { id: "res_1", updated: true });
+      return json(200, { data: [], next_cursor: null });
+    });
+
+    await client.buckets.listShared();
+    await client.buckets.shares.list("bkt_1");
+    await client.buckets.shares.create("bkt_1", {
+      grantee_organization_id: "org_partner",
+      permissions: "read_only",
+      prefixes: ["reports/"],
+      expires_at: "2027-06-01T00:00:00Z",
+    });
+    await client.buckets.shares.revoke("bkt_1", "shr_1");
+
+    await client.buckets.notifications.list("bkt_1");
+    await client.buckets.notifications.create("bkt_1", {
+      name: "on-upload",
+      events: ["object.created"],
+      prefix: "uploads/",
+      suffix: ".png",
+      target_type: "webhook",
+      target_id: "wh_1",
+      enabled: true,
+    });
+    await client.buckets.notifications.update("bkt_1", "ntf_1", {
+      events: ["object.created", "object.removed"],
+      enabled: false,
+    });
+    await client.buckets.notifications.delete("bkt_1", "ntf_1");
+
+    await client.buckets.domains.list("bkt_1");
+    await client.buckets.domains.create("bkt_1", {
+      hostname: "cdn.example.com",
+      certificate_id: "cert_1",
+      index_document: "index.html",
+      error_document: "404.html",
+      spa_mode: true,
+      cache_ttl_seconds: 300,
+    });
+    await client.buckets.domains.update("bkt_1", "bdom_1", {
+      certificate_id: "cert_2",
+      cache_ttl_seconds: 3600,
+    });
+    await client.buckets.domains.delete("bkt_1", "bdom_1");
+
+    expect(calls.map((c) => `${c.method} ${c.url.pathname}`)).toEqual([
+      "GET /public/v1/buckets/shared",
+      "GET /public/v1/buckets/bkt_1/shares",
+      "POST /public/v1/buckets/bkt_1/shares",
+      "DELETE /public/v1/buckets/bkt_1/shares/shr_1",
+      "GET /public/v1/buckets/bkt_1/notifications",
+      "POST /public/v1/buckets/bkt_1/notifications",
+      "PATCH /public/v1/buckets/bkt_1/notifications/ntf_1",
+      "DELETE /public/v1/buckets/bkt_1/notifications/ntf_1",
+      "GET /public/v1/buckets/bkt_1/domains",
+      "POST /public/v1/buckets/bkt_1/domains",
+      "PATCH /public/v1/buckets/bkt_1/domains/bdom_1",
+      "DELETE /public/v1/buckets/bkt_1/domains/bdom_1",
+    ]);
+    for (const c of calls) {
+      expect(c.headers.has("idempotency-key")).toBe(c.method !== "GET");
+    }
+  });
 });

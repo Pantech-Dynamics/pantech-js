@@ -3,7 +3,7 @@ import { APIResource, hideSecrets } from "../resource.js";
 import type { BodyOf as B, QueryOf as Q, ResponseOf as R } from "../types.js";
 import { path } from "../util.js";
 
-/** S3-compatible object storage: region availability, usage, and access keys. */
+/** S3-compatible object storage: region availability, settings, usage, and access keys. */
 export class ObjectStorage extends APIResource {
   /** S3 access keys for your organization. */
   readonly keys: ObjectStorageKeys = new ObjectStorageKeys(this._client);
@@ -16,6 +16,14 @@ export class ObjectStorage extends APIResource {
   /** Hourly object storage traffic and operations for your organization. */
   getUsage(params: Q<"getObjectStorageUsage"> = {}, options?: RequestOptions): Promise<R<"getObjectStorageUsage">> {
     return this._get("/object-storage/usage", params, options);
+  }
+
+  /** Turns Block All Public Access on or off for your organization. */
+  updateSettings(
+    body: B<"updateObjectStorageSettings">,
+    options?: RequestOptions,
+  ): Promise<R<"updateObjectStorageSettings">> {
+    return this._patch("/object-storage/settings", body, options);
   }
 }
 
@@ -42,16 +50,27 @@ export class ObjectStorageKeys extends APIResource {
   }
 }
 
-/** S3-compatible buckets, their objects, multipart uploads, and bucket rules. */
+/** S3-compatible buckets, their objects, multipart uploads, shares, notifications, custom domains, and bucket rules. */
 export class Buckets extends APIResource {
   /** Objects and folders inside a bucket. */
   readonly objects: BucketObjects = new BucketObjects(this._client);
   /** Multipart uploads for large objects. */
   readonly multipart: BucketMultipart = new BucketMultipart(this._client);
+  /** Cross-organization shares configured on a bucket. */
+  readonly shares: BucketShares = new BucketShares(this._client);
+  /** Object event notification rules on a bucket. */
+  readonly notifications: BucketNotifications = new BucketNotifications(this._client);
+  /** Custom domain bindings and static website settings on a bucket. */
+  readonly domains: BucketDomains = new BucketDomains(this._client);
 
   /** Lists every bucket in your organization. */
   list(options?: RequestOptions): Promise<R<"listBuckets">> {
     return this._get("/buckets", undefined, options);
+  }
+
+  /** Lists buckets shared with your organization by other Pantech organizations. */
+  listShared(options?: RequestOptions): Promise<R<"listSharedBuckets">> {
+    return this._get("/buckets/shared", undefined, options);
   }
 
   /** Creates a new bucket. */
@@ -194,6 +213,15 @@ export class BucketObjects extends APIResource {
     return this._post(path`/buckets/${bucketId}/objects/upload-url`, body, options);
   }
 
+  /** Signs an HTML POST upload form (S3 POST policy) so a browser can upload directly into the bucket. */
+  createUploadForm(
+    bucketId: string,
+    body: B<"createBucketUploadForm">,
+    options?: RequestOptions,
+  ): Promise<R<"createBucketUploadForm">> {
+    return this._post(path`/buckets/${bucketId}/objects/upload-form`, body, options);
+  }
+
   /** Creates a folder marker object ending with `/`. */
   createFolder(
     bucketId: string,
@@ -243,9 +271,23 @@ export class BucketObjects extends APIResource {
   ): Promise<R<"putBucketObjectVisibility">> {
     return this._put(path`/buckets/${bucketId}/objects/visibility`, body, options);
   }
+
+  /** Restores a previous object version as the latest version, or removes a delete marker. */
+  restoreVersion(
+    bucketId: string,
+    body: B<"restoreBucketObjectVersion">,
+    options?: RequestOptions,
+  ): Promise<R<"restoreBucketObjectVersion">> {
+    return this._post(path`/buckets/${bucketId}/objects/restore-version`, body, options);
+  }
 }
 
 export class BucketMultipart extends APIResource {
+  /** Lists active in-progress multipart uploads in the bucket. */
+  list(bucketId: string, options?: RequestOptions): Promise<R<"listBucketMultipartUploads">> {
+    return this._get(path`/buckets/${bucketId}/objects/multipart`, undefined, options);
+  }
+
   /** Starts a multipart upload session for a large object. Sent once: not retried on error. */
   start(
     bucketId: string,
@@ -262,6 +304,15 @@ export class BucketMultipart extends APIResource {
     options?: RequestOptions,
   ): Promise<R<"signBucketMultipartPart">> {
     return this._post(path`/buckets/${bucketId}/objects/multipart/sign-part`, body, options);
+  }
+
+  /** Batch-signs short-lived upload URLs for up to 100 parts of an active multipart upload. */
+  signParts(
+    bucketId: string,
+    body: B<"signBucketMultipartParts">,
+    options?: RequestOptions,
+  ): Promise<R<"signBucketMultipartParts">> {
+    return this._post(path`/buckets/${bucketId}/objects/multipart/sign-parts`, body, options);
   }
 
   /** Uploads one part of an active multipart upload as raw bytes. */
@@ -291,5 +342,80 @@ export class BucketMultipart extends APIResource {
   /** Aborts an active multipart upload and discards uploaded parts. */
   abort(bucketId: string, body: B<"abortBucketMultipartUpload">, options?: RequestOptions): Promise<void> {
     return this._post(path`/buckets/${bucketId}/objects/multipart/abort`, body, options);
+  }
+}
+
+export class BucketShares extends APIResource {
+  /** Lists active cross-organization shares configured on a bucket. */
+  list(bucketId: string, options?: RequestOptions): Promise<R<"listBucketShares">> {
+    return this._get(path`/buckets/${bucketId}/shares`, undefined, options);
+  }
+
+  /** Grants another Pantech organization access to this bucket or specific key prefixes. */
+  create(bucketId: string, body: B<"createBucketShare">, options?: RequestOptions): Promise<R<"createBucketShare">> {
+    return this._post(path`/buckets/${bucketId}/shares`, body, options);
+  }
+
+  /** Revokes another organization's cross-account access to this bucket. */
+  revoke(bucketId: string, shareId: string, options?: RequestOptions): Promise<void> {
+    return this._delete(path`/buckets/${bucketId}/shares/${shareId}`, options);
+  }
+}
+
+export class BucketNotifications extends APIResource {
+  /** Lists object event notification rules configured on this bucket. */
+  list(bucketId: string, options?: RequestOptions): Promise<R<"listBucketNotifications">> {
+    return this._get(path`/buckets/${bucketId}/notifications`, undefined, options);
+  }
+
+  /** Subscribes a webhook endpoint or function to object events in this bucket. */
+  create(
+    bucketId: string,
+    body: B<"createBucketNotification">,
+    options?: RequestOptions,
+  ): Promise<R<"createBucketNotification">> {
+    return this._post(path`/buckets/${bucketId}/notifications`, body, options);
+  }
+
+  /** Updates events, prefix/suffix filters, or enabled state of a notification rule. */
+  update(
+    bucketId: string,
+    notificationId: string,
+    body: B<"updateBucketNotification">,
+    options?: RequestOptions,
+  ): Promise<R<"updateBucketNotification">> {
+    return this._patch(path`/buckets/${bucketId}/notifications/${notificationId}`, body, options);
+  }
+
+  /** Deletes an object notification rule. */
+  delete(bucketId: string, notificationId: string, options?: RequestOptions): Promise<void> {
+    return this._delete(path`/buckets/${bucketId}/notifications/${notificationId}`, options);
+  }
+}
+
+export class BucketDomains extends APIResource {
+  /** Lists custom domain bindings and static website settings on a bucket. */
+  list(bucketId: string, options?: RequestOptions): Promise<R<"listBucketDomains">> {
+    return this._get(path`/buckets/${bucketId}/domains`, undefined, options);
+  }
+
+  /** Binds a custom hostname with a Certificate Manager TLS certificate and static website settings. */
+  create(bucketId: string, body: B<"createBucketDomain">, options?: RequestOptions): Promise<R<"createBucketDomain">> {
+    return this._post(path`/buckets/${bucketId}/domains`, body, options);
+  }
+
+  /** Updates the TLS certificate or static website routing and cache settings on a custom domain. */
+  update(
+    bucketId: string,
+    domainId: string,
+    body: B<"updateBucketDomain">,
+    options?: RequestOptions,
+  ): Promise<R<"updateBucketDomain">> {
+    return this._patch(path`/buckets/${bucketId}/domains/${domainId}`, body, options);
+  }
+
+  /** Detaches a custom domain from a bucket. */
+  delete(bucketId: string, domainId: string, options?: RequestOptions): Promise<void> {
+    return this._delete(path`/buckets/${bucketId}/domains/${domainId}`, options);
   }
 }

@@ -73,7 +73,7 @@ Every method takes per-call options last: `{ signal, timeout, maxRetries, idempo
 | Kubernetes | `kubernetes.*`, `kubernetes.nodePools.*`, `kubernetes.addons.toggle(...)` |
 | Security groups | `securityGroups.*`, `securityGroups.replaceRules(id, {...})` |
 | Volumes and snapshots | `volumes.*`, `volumes.snapshots.*`, `snapshots.*` |
-| Object storage | `objectStorage.getStatus/getUsage`, `objectStorage.keys.*`, `buckets.*`, `buckets.objects.*`, `buckets.multipart.*` |
+| Object storage | `objectStorage.getStatus/getUsage/updateSettings`, `objectStorage.keys.*`, `buckets.*` (`listShared`), `buckets.objects.*` (`createUploadForm`, `restoreVersion`), `buckets.multipart.*` (`list`, `signParts`), `buckets.shares.*`, `buckets.notifications.*`, `buckets.domains.*` |
 | Databases | `databases.*`, `databases.snapshots.*`, `databaseOrders.wait(order)` |
 | SSH keys, webhooks | `sshKeys.*`, `webhooks.*`, `webhooks.deliveries.*` |
 | Billing and usage | `billing.credit.get()`, `billing.credit.purchases.create(...)`, `billing.receipts.getPdf(id)`, `usage.get()` |
@@ -147,9 +147,11 @@ await client.instances.dynamicIp.disable("vm_…");
 
 ## Object storage
 
-`client.objectStorage` and `client.buckets` manage S3-compatible buckets, access keys, binary
-uploads and downloads, per-object visibility, multipart uploads, and bucket rules (CORS, lifecycle,
-tags, and object lock).
+`client.objectStorage` and `client.buckets` manage S3-compatible buckets, org-wide Block All Public
+Access settings, scoped access keys, binary uploads and downloads, browser POST upload forms,
+version restore, per-object visibility, multipart uploads (including listing and batch part
+signing), cross-organization shares, event notifications, custom domains, and bucket rules (CORS,
+lifecycle, tags, encryption, and object lock).
 
 ```ts
 const status = await client.objectStorage.getStatus();
