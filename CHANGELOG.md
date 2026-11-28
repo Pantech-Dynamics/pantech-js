@@ -6,6 +6,12 @@ until then.
 
 ## Unreleased
 
+## 0.7.1 (2026-11-28)
+
+- `iam.MANAGED_POLICY_IDS` and `ManagedPolicyId` include Pantech's six new managed policies:
+  `pol_pantech_compute_admin`, `pol_pantech_kubernetes_admin`, `pol_pantech_object_storage_admin`,
+  `pol_pantech_email_manager`, `pol_pantech_certificate_manager` and `pol_pantech_migrate_manager`.
+
 ## 0.7.0 (2026-11-28)
 
 - Object Storage parity across settings, uploads, versioning, multipart, sharing, notifications,
