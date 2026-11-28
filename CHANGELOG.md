@@ -6,6 +6,29 @@ until then.
 
 ## Unreleased
 
+## 0.7.0 (2026-11-28)
+
+- Object Storage parity across settings, uploads, versioning, multipart, sharing, notifications,
+  and custom domains:
+  - `objectStorage.updateSettings({ block_public_access })` (`PATCH /object-storage/settings`),
+    with `ObjectStorageSettings` and `UpdateObjectStorageSettingsRequest` type aliases and
+    `block_public_access` on `ObjectStorageStatus`.
+  - Scoped S3 access keys (`permissions`: `read_only` | `read_write` | `write_only`, `prefixes`,
+    and `expires_at`) and default bucket server-side encryption (`encryption`: `none` | `sse_s3`,
+    `server_side_encryption` on object metadata).
+  - `buckets.objects.createUploadForm(bucketId, ...)` (`POST /buckets/{bucket_id}/objects/upload-form`)
+    for direct browser POST uploads and `buckets.objects.restoreVersion(bucketId, ...)`
+    (`POST /buckets/{bucket_id}/objects/restore-version`) to restore historical versions or remove
+    delete markers.
+  - `buckets.multipart.list(bucketId)` (`GET /buckets/{bucket_id}/objects/multipart`) and
+    `buckets.multipart.signParts(bucketId, ...)` (`POST /buckets/{bucket_id}/objects/multipart/sign-parts`)
+    to inspect in-progress uploads and batch-sign up to 100 part URLs at once.
+  - Cross-organization bucket sharing: `buckets.listShared()` (`GET /buckets/shared`) and
+    `buckets.shares` (`list`, `create`, `revoke`).
+  - Bucket event notifications: `buckets.notifications` (`list`, `create`, `update`, `delete`).
+  - Bucket custom domains and static websites: `buckets.domains` (`list`, `create`, `update`, `delete`).
+- Vendored OpenAPI spec synced to the current public API and types regenerated.
+
 ## 0.6.1 (2026-11-25)
 
 - The vendored spec is the one now published, and the `spec/pending` files it covers are gone; the
